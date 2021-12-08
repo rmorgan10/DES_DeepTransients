@@ -1,0 +1,206 @@
+
+DATASET:
+    NAME: tester
+    PARAMETERS:
+        SIZE: 1000
+        SEED: 6
+        OUTDIR: dl_sims
+        
+COSMOLOGY:
+    PARAMETERS:
+        H0: 70
+        Om0: 0.30
+
+IMAGE:
+    PARAMETERS:
+        exposure_time:
+            DISTRIBUTION:
+                NAME: des_deep_exposure_time
+                PARAMETERS: None
+        numPix: 45
+        pixel_scale: 0.263
+        psf_type: 'GAUSSIAN'
+        read_noise: 7
+        ccd_gain: 6.083
+        supersampling_factor: 10
+
+SURVEY:
+    PARAMETERS:
+        BANDS: g,r,i,z
+        seeing: 
+            DISTRIBUTION:
+                NAME: des_deep_seeing
+                PARAMETERS: None
+        magnitude_zero_point:
+            DISTRIBUTION:
+                NAME: des_deep_magnitude_zero_point
+                PARAMETERS: None            
+        num_exposures: 1
+        sky_brightness: 99  # Turn off because we're using real images
+
+SPECIES:
+    GALAXY_1:
+        NAME: DARKLENS
+        LIGHT_PROFILE_1: 
+            NAME: SERSIC_ELLIPSE
+            PARAMETERS:
+                magnitude: 99 # Turn off for real images
+                center_x: 0.0
+                center_y: 0.0
+                R_sersic: 1.0 # No effect
+                n_sersic: 1.0 # No effect
+                e1: 0.0  # No effect
+                e2: 0.0  # No effect
+
+        MASS_PROFILE_1:
+            NAME: SIE 
+            PARAMETERS:
+                theta_E:
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: 0.4
+                            maximum: 1.8
+                                
+                        
+                e1: # Distribution for map.txt
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: -0.1
+                            maximum: 0.1
+                        
+                e2: # Distribution for map.txt
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: -0.1
+                            maximum: 0.1
+                center_x: 0.0
+                center_y: 0.0
+    
+    GALAXY_2:
+        NAME: SOURCE
+        LIGHT_PROFILE_1:
+            NAME: SERSIC_ELLIPSE
+            PARAMETERS:
+                center_x:
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: -0.05
+                            maximum: 0.05
+                center_y:
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: -0.05
+                            maximum: 0.05
+                magnitude: 20.0 # Overwritten by USERDIST
+                R_sersic: 1.0 # Overwritten by USERDIST
+                n_sersic: 1.0 # Overwritten by USERDIST
+                e1: 0.0 # Overwritten by USERDIST
+                e2: 0.0 # Overwritten by USERDIST
+        MASS_PROFILE_1:
+            NAME: SIE
+            PARAMETERS:
+                theta_E: 1.0 # No effect
+                e1: 0.0 # No effect
+                e2: 0.0 # No effect
+                center_x: 0.0 # No effect
+                center_y: 0.0 # No effect
+                
+    POINTSOURCE_1:
+        NAME: SNIa
+        MODEL: ia_random
+        HOST: SOURCE
+        PARAMETERS:
+            magnitude: -5.0 # Overwritten by lightcurve
+            sep_unit: arcsec
+            sep:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: 0.1
+                        maximum: 0.4
+    
+    POINTSOURCE_2:
+        NAME: SNCC
+        MODEL: cc_random
+        HOST: SOURCE
+        PARAMETERS:
+            magnitude: -5.0 # Overwritten by lightcurve
+            sep_unit: arcsec
+            sep:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: 0.1
+                        maximum: 0.4
+                            
+
+BACKGROUNDS:
+    PATH: /data/des81.b/data/stronglens/DEEP_FIELDS/PROCESSED/TRAINING_A
+    CONFIGURATIONS: ['CONFIGURATION_1', 'CONFIGURATION_2']
+    ITERATE: None
+    
+DISTRIBUTIONS:
+    USERDIST_1:
+        FILENAME: source_light_profiles.txt
+        MODE: sample
+
+GEOMETRY:
+    CONFIGURATION_1:
+        NAME: LSNEIa
+        FRACTION: 0.5
+        PLANE_1:
+            OBJECT_1: DARKLENS
+            PARAMETERS:
+                REDSHIFT: 0.1 # Overwritten by USERDIST
+                    
+        PLANE_2:
+            OBJECT_1: SOURCE
+            OBJECT_2: SNIa
+            PARAMETERS:
+                REDSHIFT:  # Overwritten by USERDIST, but need distribution to create large SNe lightcurve bank
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: 0.2
+                            maximum: 1.2
+        TIMESERIES:
+            NITES: [0, 7, 14] #, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98] # des_deep_cadence.yaml
+            OBJECTS: ['SNIa']
+            PEAK:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: -20
+                        maximum: 118
+        
+    CONFIGURATION_2:
+        NAME: LSNECC
+        FRACTION: 0.5
+        PLANE_1:
+            OBJECT_1: DARKLENS
+            PARAMETERS:
+                REDSHIFT: 0.1 # Overwritten by USERDIST
+        PLANE_2:
+            OBJECT_1: SOURCE
+            OBJECT_2: SNCC
+            PARAMETERS:
+                REDSHIFT:  # Overwritten by USERDIST, but need distribution to create large SNe lightcurve bank
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: 0.2
+                            maximum: 1.2
+        TIMESERIES:
+            NITES:  [0, 7, 14] #, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98] # des_deep_cadence.yaml
+            OBJECTS: ['SNCC']
+            PEAK:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: -20
+                        maximum: 118

@@ -1,0 +1,1 @@
+select z.id, z.z_peak, p.bdf_g_0, p.pdf_g_1 from WILLHARTLEY.Y3_DEEP_FIELDS_PHOTOM p, willhartley.Y3_DEEP_FIELDS_PHOTOZ z where z.id = p.id; > redshifts_ellipticities.fits
