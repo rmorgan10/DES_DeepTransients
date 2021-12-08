@@ -17,4 +17,6 @@ wget_lists/
 zipper_prep/filters/
 zipper_prep/seds/
 
+zippernet/__pycache__/
+
 *~

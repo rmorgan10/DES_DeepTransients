@@ -10,6 +10,7 @@ To run this script, you must be in the deeplens conda environment.
 import os
 
 from deeplenstronomy.deeplenstronomy import make_dataset
+from zippernet.data_utils import BASE_DATA_PATH
 
 BASE_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS"
 CONFIG_FILE = "dl_config.yaml"
@@ -31,7 +32,9 @@ make_dataset(
     return_planes=True,
 )
 
-# Collect necessary files for reproduction.
+# Collect necessary files for reproduction, overwrite old sims.
+if os.path.exists(f"{BASE_PATH}/SIMULATIONS/dl_sims"):
+    os.system(f"rm -rf {BASE_PATH}/SIMULATIONS/dl_sims")
 os.system(f"mv dl_sims {BASE_PATH}/SIMULATIONS")
 for filename in [CONFIG_FILE] + AUXILLARY_FILES:
     os.system(f"cp {filename} {BASE_PATH}/SIMULATIONS")

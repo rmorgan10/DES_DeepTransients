@@ -14,6 +14,7 @@ class CNN(nn.Module):
         self.config_dict = config_dict
 
         for layer, kwargs in config_dict.items():
+            obj = None
             if layer.startswith("conv"):
                 obj = nn.Conv2d
             elif layer.startswith("dropout"):
@@ -21,11 +22,12 @@ class CNN(nn.Module):
             elif layer.startswith("fc"):
                 obj = nn.Linear
 
-            setattr(self, layer, obj(**kwargs))     
+            if obj is not None:
+                setattr(self, layer, obj(**kwargs))     
         
     def forward(self, x):
 
-        for layer, kwargs in self.config_dict:
+        for layer, kwargs in self.config_dict.items():
             if (layer.startswith("conv") or 
                 layer.startswith("dropout") or 
                 layer.startswith("fc")):
@@ -53,12 +55,14 @@ class RNN(nn.Module):
         self.config_dict = config_dict
 
         for layer, kwargs in config_dict.items():
+            obj = None
             if layer.startswith("lstm"):
                 obj = nn.LSTM
             elif layer.startswith("fc"):
                 obj = nn.Linear
 
-            setattr(self, layer, obj(**kwargs))
+            if obj is not None:
+                setattr(self, layer, obj(**kwargs))
 
     def forward(self, x):
 
@@ -104,7 +108,7 @@ class ZipperNN(nn.Module):
         
         for layer in self.config_dict:
             if layer.startswith("fc"):
-                full_output = getattr(layer)(full_output)
+                full_output = getattr(self, layer)(full_output)
             elif layer.startswith("relu"):
                 full_output = F.relu(full_output)
             elif layer.startswith("softmax"):

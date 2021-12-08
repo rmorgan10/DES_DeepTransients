@@ -13,11 +13,12 @@ if __name__ == "__main__":
     # Handle command-line arguments.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--config_file", dtype=str, help="Name of config file.")
+        "--config_file", type=str, help="Name of config file.")
     parser.add_argument(
-        "--sequence_length", dtype=int, help="Number of epochs in sequence.")
+        "--sequence_length", type=int, default=10,
+        help="Number of epochs in sequence.")
     parser.add_argument(
-        "--outdir", dtype=int, help="Directtory to save output.")
+        "--outdir", type=str, help="Directtory to save output.")
     parser_args = parser.parse_args()
     config_dict = data_utils.read_config(parser_args.config_file)
 
@@ -38,4 +39,10 @@ if __name__ == "__main__":
 
     # Train ZipperNet.
     net = training.train(
-        net, training_data, validation_data, train_dataloader, config_dict)
+        net, training_data, validation_data, train_dataloader, config_dict,
+        parser_args.outdir, parser_args.sequence_length)
+
+    # Save final performance.
+    training.save_performance(
+        net, validation_data, config_dict, parser_args.outdir,
+        parser_args.sequence_length)

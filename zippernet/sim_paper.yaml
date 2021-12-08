@@ -14,13 +14,15 @@ CNN:
     padding: 2
   maxpool:
     kernel_size: 2
-  dropout1: 0.25
+  dropout1:
+    p: 0.25
   flatten: None
   fc1:
     in_features: 3456
     out_features: 408
   relu2: None
-  dropout2: 0.5
+  dropout2:
+    p: 0.5
   fc2:
     in_features: 408
     out_features: 25
@@ -34,17 +36,23 @@ RNN:
     batch_first: True
   fc:
     in_features: 128
-    out_featrues: 25
+    out_features: 25
 
 fc1:
   in_features: 50
-  out_features: 4
+  out_features: 6
 relu: None
 fc2:
-  in_features: 4
-  out_features: 2
+  in_features: 6
+  out_features: 3
 softmax: None
   
 batch_size: 5
 shuffle: True
 num_workers: 4
+
+num_epochs: 3
+learning_rate: 0.001
+optimizer: adam
+loss: crossentropy
+validation_size: 1000

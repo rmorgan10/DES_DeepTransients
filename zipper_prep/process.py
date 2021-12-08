@@ -216,7 +216,7 @@ def process(
             if cadence_length < sequence_length:
                 raise ValueError(
                     f"Sequence length must be less that cadence length ({cadence_length}).")
-            if cadence_length not in outdata:
+            if sequence_length not in outdata:
                 outdata[sequence_length] = {"ims": [], 'lcs': [], 'mds': []}
             
             # Coadd and scale the images - skip if error raised
@@ -340,6 +340,7 @@ if __name__ == "__main__":
     parser_args = parser.parse_args()
 
     if parser_args.training_a:
+        print("Processing TRAINING_A")
         for configuration in ['CONFIGURATION_1', 'CONFIGURATION_2']:
             # Load images, planes, and metadata into memory.
             image_arr = np.load(f'{BASE_PATH}/SIMULATIONS/dl_sims/{configuration}_images.npy', allow_pickle=True)
@@ -370,6 +371,7 @@ if __name__ == "__main__":
                 np.save(f"{BASE_PATH}/ZIPPERNET/{configuration}_training_a_mds_{key}.npy", out_md, allow_pickle=True)
 
     if parser_args.training_b:
+        print("Processing TRAINING_B")
         # Separate by cutout.
         cutout_names = [x.split('/')[-2] for x in glob.glob(f'{BASE_PATH}/PROCESSED/TRAINING_B/*/images.npy')]
 
@@ -398,6 +400,7 @@ if __name__ == "__main__":
                 np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_training_b_mds_{key}.npy", out_md, allow_pickle=True)
 
     if parser_args.testing:
+        print("Processing TESTING")
         # Separate by cutout.
         cutout_names = [x.split('/')[-2] for x in glob.glob(f'{BASE_PATH}/PROCESSED/TESTING/*/images.npy')]
 

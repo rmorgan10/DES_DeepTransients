@@ -114,14 +114,18 @@ def load_training_data(
 
         # Metadata.
         md_file = f'{BASE_DATA_PATH}/{data_source}_mds_{sequence_length}.npy'
-        metadata[label].append(np.load(md_file, allow_pickle=True).item())
-
-        # Labels.
-        labels.extend([label]*len(im))
+        md = np.load(md_file, allow_pickle=True).item()
+        for i in range(len(im)):
+            metadata[label].append(md[i])
 
     # Truncate to have roughly equal class representation.
     images[0] = np.concatenate(images[0])
     lightcurves[0] = np.concatenate(lightcurves[0])
+    images[1] = np.concatenate(images[1])
+    lightcurves[1] = np.concatenate(lightcurves[1])
+    images[2] = np.concatenate(images[2])
+    lightcurves[2] = np.concatenate(lightcurves[2])
+
     if len(images[0]) > 2 * len(images[1]):
         # Downsample negatives.
         indices = np.arange(len(images[0]), dtype=int)
@@ -129,7 +133,10 @@ def load_training_data(
             indices, size=2*len(images[1]), replace=False)
         images[0] = images[0][chosen_indices]
         lightcurves[0] = lightcurves[0][chosen_indices]
-        metadata[0] = list(np.array(metadata[0])[chosen_indices])
+        out_md = []
+        for i in chosen_indices:
+            out_md.append(metadata[0][i])
+        metadata[0] = out_md
     else:
         for config in (1, 2):
             indices = np.arange(len(images[config]), dtype=int)
@@ -137,7 +144,10 @@ def load_training_data(
                 indices, size=len(images[0]) // 2, replace=False)
             images[config] = images[config][chosen_indices]
             lightcurves[config] = lightcurves[config][chosen_indices]
-            metadata[config] = list(np.array(metadata[config])[chosen_indices])
+            out_md = []
+            for i in chosen_indices:
+                out_md.append(metadata[config][i])
+            metadata[config] = out_md
 
     y = np.array([*[0]*len(images[0]), *[2]*len(images[2]), *[2]*len(images[2])], dtype=int)
     X_im = np.concatenate([images[0], images[1], images[2]])
@@ -150,15 +160,10 @@ def load_training_data(
     
     train_images, test_images, garb1, garb2 = train_test_split(
         X_im, y, test_size=0.1, random_state=6, stratify=y)
-    
-    # Split and save metadata
-    full_md = []
-    for md in metadata:
-        for v in md.values():
-            full_md.append(v)
-    
+
+    # Split and save metadata  
     train_md, test_md, garb1, garb2 = train_test_split(
-        full_md, y, test_size=0.1, random_state=6, stratify=y)
+        metadata, y, test_size=0.1, random_state=6, stratify=y)
     
     train_md = {idx: train_md[idx] for idx in range(len(train_md))}
     test_md = {idx: test_md[idx] for idx in range(len(test_md))}
@@ -172,7 +177,7 @@ def load_training_data(
         transform=ToCombinedTensor())
     test_dataset = CombinedDataset(
         test_images, test_lightcurves, test_labels, 
-        transform=ToCombinedTensor()),
+        transform=ToCombinedTensor())
     train_dataloader = DataLoader(
         train_dataset, batch_size=config_dict['batch_size'],
         shuffle=config_dict['shuffle'], num_workers=config_dict['num_workers'])
