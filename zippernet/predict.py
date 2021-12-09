@@ -1,14 +1,11 @@
 """Evaluate TESTING data with trained network."""
 
-import glob
-
 import numpy as np
 import pandas as pd
 import torch
 
 from data_utils import BASE_DATA_PATH, CombinedDataset, ToCombinedTensor, read_config
 from network import ZipperNN
-
 
 if __name__ == '__main__':
     import argparse
@@ -21,12 +18,13 @@ if __name__ == '__main__':
         help="Name of config file used in training.")
     parser.add_argument(
         "--outdir", type=str, help="Directtory to save output.")
+    parser.add_argument(
+        '--cutout_names', type=str, help="Comma-delimited list of cutouts.")
     parser_args = parser.parse_args()
 
     # Locate test data.
     sequence_length = int(parser_args.network.split('_')[-1].split('.')[0])
-    files = glob.glob(f'{BASE_DATA_PATH}/*testing_ims_{sequence_length}.npy')
-    names = [x.split('_testing')[0].split('ZIPPERNET/')[-1] for x in files]
+    names = parser_args.cutout_names.split(',')
 
     # Load network.
     net = ZipperNN(read_config(parser_args.config_file))
