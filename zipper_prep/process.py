@@ -244,11 +244,11 @@ def process(
             current_objid = objid
 
     # Report data loss
-    print(
-        "Losing",  
-        round(float(num_errors) / float(len(outdata[sequence_length]["ims"])) * 100, 2), 
-        "% (Constants)",
-    )
+    #print(
+    #    "Losing",  
+    #    round(float(num_errors) / float(len(outdata[sequence_length]["ims"])) * 100, 2), 
+    #    "% (Constants)",
+    #)
     
     return outdata
 
@@ -342,6 +342,7 @@ if __name__ == "__main__":
     if parser_args.training_a:
         print("Processing TRAINING_A")
         for configuration in ['CONFIGURATION_1', 'CONFIGURATION_2']:
+            print(configuration)
             # Load images, planes, and metadata into memory.
             image_arr = np.load(f'{BASE_PATH}/SIMULATIONS/dl_sims/{configuration}_images.npy', allow_pickle=True)
             metadata = pd.read_csv(f'{BASE_PATH}/SIMULATIONS/dl_sims/{configuration}_metadata.csv')
@@ -377,8 +378,10 @@ if __name__ == "__main__":
 
         # Remove cutouts that are already processed.
         cutout_names = [x for x in cutout_names if not os.path.exists(f"{BASE_PATH}/ZIPPERNET/{x}_training_b_ims_{parser_args.sequence_length}.npy")]
+        total_cutouts = len(cutout_names)
 
-        for cutout_name in cutout_names:
+        for cutout_idx, cutout_name in enumerate(cutout_names):
+            print(f'{cutout_idx + 1} of {total_cutouts}:\t{cutout_name}')
             # Load images and metadata into memory.
             image_arr = np.load(f'{BASE_PATH}/PROCESSED/TRAINING_B/{cutout_name}/images.npy', allow_pickle=True)
             metadata = pd.read_csv(f'{BASE_PATH}/PROCESSED/TRAINING_B/{cutout_name}/metadata.csv')
@@ -406,8 +409,10 @@ if __name__ == "__main__":
 
         # Remove cutouts that are already processed.
         cutout_names = [x for x in cutout_names if not os.path.exists(f"{BASE_PATH}/ZIPPERNET/{x}_testing_ims_{parser_args.sequence_length}.npy")]
+        total_cutouts = len(cutout_names)
 
-        for cutout_name in cutout_names:
+        for cutout_idx, cutout_name in enumerate(cutout_names):
+            print(f'{cutout_idx + 1} of {total_cutouts}:\t{cutout_name}')
             # Load images and metadata into memory.
             image_arr = np.load(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/images.npy', allow_pickle=True)
             metadata = pd.read_csv(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/metadata.csv')
