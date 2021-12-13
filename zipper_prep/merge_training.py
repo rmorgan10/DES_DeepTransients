@@ -5,6 +5,7 @@ builds up a single set of training data from mutliple cutouts.
 """
 
 import glob
+import os
 from typing import List
 
 from astropy.io import fits
@@ -45,7 +46,7 @@ def merge_fits(filenames: List[str], output_filename: str):
 
     # Save to disk.
     hdu = fits.PrimaryHDU(output_array)
-    hdu.writeto(output_filename)
+    hdu.writeto(output_filename, clobber=True)
 
 
 def merge_maps(filenames: List[str], output_filename: str):
@@ -69,7 +70,7 @@ def merge_maps(filenames: List[str], output_filename: str):
     
 if __name__ == "__main__":
 
-    cutout_dirs = glob.glob(f'{BASE_PATH}/TRAINING_A/*')
+    cutout_dirs = [x for x in glob.glob(f'{BASE_PATH}/TRAINING_A/*') if os.path.isdir(x)]
 
     # Merge fits files.
     for band in "griz":
