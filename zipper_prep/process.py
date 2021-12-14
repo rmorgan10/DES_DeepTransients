@@ -341,35 +341,42 @@ if __name__ == "__main__":
 
     if parser_args.training_a:
         print("Processing TRAINING_A")
-        for configuration in ['CONFIGURATION_1', 'CONFIGURATION_2']:
-            print(configuration)
-            # Load images, planes, and metadata into memory.
-            image_arr = np.load(f'{BASE_PATH}/SIMULATIONS/dl_sims/{configuration}_images.npy', allow_pickle=True)
-            metadata = pd.read_csv(f'{BASE_PATH}/SIMULATIONS/dl_sims/{configuration}_metadata.csv')
-            planes = np.load(f'{BASE_PATH}/SIMULATIONS/dl_sims/{configuration}_planes.npy', allow_pickle=True)
-            source_planes = planes[:, 1, 2]  # i-band only.
-            lens_planes = image_arr[:, 2] - source_planes  # i-band only.
+        cutout_paths = glob.glob(f'{BASE_PATH}/SIMULATIONS/*')
 
-            # Process training data.
-            output = process(
-                image_arr, metadata, parser_args.sequence_length, source_planes, 
-                lens_planes, parser_args.cumulative)
+        total_cutouts = len(cutout_paths)
+        for cutout_idx, cutout_path in enumerate(cutout_paths):
+            cutout_name = cutout_path.split('/')[-1]
+            print(f'{cutout_idx + 1} of {total_cutouts}:\t{cutout_name}')
 
-            if parser_args.mr:
-                output = mirror_and_rotate(output)
+            for configuration in ['CONFIGURATION_1', 'CONFIGURATION_2']:
+                print(configuration)
+                # Load images, planes, and metadata into memory.
+                image_arr = np.load(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_images.npy', allow_pickle=True)
+                metadata = pd.read_csv(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_metadata.csv')
+                planes = np.load(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_planes.npy', allow_pickle=True)
+                source_planes = planes[:, 1, 2]  # i-band only.
+                lens_planes = image_arr[:, 2] - source_planes  # i-band only.
 
-            # Remove systems where time delay was NaN (no lensing).
-            output = clean_training_a(output)
+                # Process training data.
+                output = process(
+                    image_arr, metadata, parser_args.sequence_length, source_planes, 
+                    lens_planes, parser_args.cumulative)
 
-            # Save processed training data.
-            for key in output:
-                out_ims = np.array(output[key]["ims"])
-                out_lcs = np.array(output[key]["lcs"])
-                out_md = {idx: output[key]["mds"][idx] for idx in range(len(output[key]["mds"]))}
-                
-                np.save(f"{BASE_PATH}/ZIPPERNET/{configuration}_training_a_ims_{key}.npy", out_ims)
-                np.save(f"{BASE_PATH}/ZIPPERNET/{configuration}_training_a_lcs_{key}.npy", out_lcs)
-                np.save(f"{BASE_PATH}/ZIPPERNET/{configuration}_training_a_mds_{key}.npy", out_md, allow_pickle=True)
+                if parser_args.mr:
+                    output = mirror_and_rotate(output)
+
+                # Remove systems where time delay was NaN (no lensing).
+                output = clean_training_a(output)
+
+                # Save processed training data.
+                for key in output:
+                    out_ims = np.array(output[key]["ims"])
+                    out_lcs = np.array(output[key]["lcs"])
+                    out_md = {idx: output[key]["mds"][idx] for idx in range(len(output[key]["mds"]))}
+                    
+                    np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_{configuration}_training_a_ims_{key}.npy", out_ims)
+                    np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_{configuration}_training_a_lcs_{key}.npy", out_lcs)
+                    np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_{configuration}_training_a_mds_{key}.npy", out_md, allow_pickle=True)
 
     if parser_args.training_b:
         print("Processing TRAINING_B")

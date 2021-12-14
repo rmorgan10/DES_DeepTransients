@@ -97,8 +97,17 @@ def load_training_data(
     training_b_names = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in training_b_files]
     for name in training_b_names:
         data_sources.append((name, 0))
-    data_sources.append(('CONFIGURATION_1_training_a', 1))
-    data_sources.append(('CONFIGURATION_2_training_a', 2))
+
+    training_a_files_conf_1 = glob.glob(f'{BASE_DATA_PATH}/*_CONFIGURATION_1_training_a_ims_{sequence_length}.npy')
+    training_a_names_conf_1 = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in training_a_files_conf_1]
+    for name in training_a_names_conf_1:
+        data_sources.append((name, 1))
+
+    training_a_files_conf_2 = glob.glob(f'{BASE_DATA_PATH}/*_CONFIGURATION_2_training_a_ims_{sequence_length}.npy')
+    training_a_names_conf_2 = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in training_a_files_conf_2]
+    for name in training_a_names_conf_2:
+        data_sources.append((name, 2))
+
 
     # Load data sources into memory and extand labels.
     for data_source, label in data_sources:
