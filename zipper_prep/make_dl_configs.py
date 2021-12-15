@@ -14,7 +14,7 @@ import pandas as pd
 BASE_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS/PROCESSED/TRAINING_A"
 
 
-def make_config(cutout_name: str, seed: int, lines: List[str]):
+def make_config(cutout_name: str, seed: int, lines: List[str]) -> int:
   """Make a dl config file for a cutout.
 
   Update the base config file with a new random seed, number of images, and
@@ -24,11 +24,17 @@ def make_config(cutout_name: str, seed: int, lines: List[str]):
     cutout_name (str): Name of cutout (like X3_Y2_4).
     seed (int): Random seed for simulation (natural number).
     lines (List[str]): Contents of base config file.
+
+  Returns:
+    num_images for status tracking.
   """
   # Get number of images to simulate save image path.
   image_path = f"{BASE_PATH}/{cutout_name}"
   map_df = pd.read_csv(f"{image_path}/map.txt")
   num_images = len(map_df)
+
+  if num_images == 0:
+    os.system(f"touch {BASE_PATH}/{cutout_name}/EMPTY.SKIP")
 
   # Set seed, image path, and number of images in config file contents.
   out_lines = []
@@ -47,6 +53,8 @@ def make_config(cutout_name: str, seed: int, lines: List[str]):
   with open(f"{image_path}/dl_config.yaml", "w+") as f:
     f.writelines(out_lines)
 
+  return num_images
+
     
 if __name__ == "__main__":
 
@@ -62,6 +70,14 @@ if __name__ == "__main__":
   seeds = list(range(len(cutout_dirs)))
   random.shuffle(seeds)
 
+  num_images, empty_cutouts = 0, []
   for cutout_dir, seed in zip(cutout_dirs, seeds):
     cutout_name = cutout_dir.split('/')[-1]
-    make_config(cutout_name, seed, lines)
+    new_images = make_config(cutout_name, seed, lines)
+    if new_images == 0:
+      empty_cutouts.append(cutout_name)
+    num_images += new_images
+
+  # Print out stats
+  print("Total image sets: ", num_images)
+  print(f"Empty cutouts: ({len(empty_cutouts)})\n", empty_cutouts)
