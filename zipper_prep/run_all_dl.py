@@ -26,14 +26,17 @@ if parser_args.check_progress:
     progress = {node: {'DONE': 0, 'TOTAL': 0} for node in des_nodes}
     for line in lines:
         node, cutout = line.split(':')
-        if os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/CONFIGURATION_2_images.npy"):
+        if (os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/CONFIGURATION_2_images.npy") or
+            os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/EMPTY.SKIP")):
             progress[node]['DONE'] += 1
-        elif os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/CONFIGURATION_1_images.npy"):
+        elif os.path.exists(f"{cutout}/CONFIGURATION_1_images.npy"):
             progress[node]['DONE'] += 0.5
         progress[node]['TOTAL'] += 1
 
     for node in progress:
-        print(f"{node}:\tDONE: {progress['DONE']}\tTODO: {progress['TOTAL'] - progress['DONE']}\tTOTAL:{progress['TOTAL']}")
+        todo = progress[node]['TOTAL'] - progress[node]['DONE']
+        done_str = '- DONE!' if todo == 0 else ''
+        print(f"{node}:\tDONE: {progress[node]['DONE']}\tTODO: {todo}\tTOTAL: {progress[node]['TOTAL']} {done_str}")
 
     sys.exit()
 
@@ -55,13 +58,16 @@ for node, cutouts in jobs.items():
 f.close()
 
 # Send off jobs.
-for node in des_nodes:
+for node, cutouts in jobs.items():
+    if len(cutouts) == 0:
+        continue
+
     command = (
         f'ssh rmorgan@{node}.fnal.gov ' +
         '"source /data/des81.b/data/stronglens/setup.sh && '
         'conda deactivate && conda activate deeplens && '
-        'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zipper_prep/ &&'
+        'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zipper_prep/ && '
         'python run_dl.py '
-        f'--cutout_names {",".join(jobs[node])}" &')
+        f'--cutout_names {",".join(cutouts)}" &')
 
     os.system(command)

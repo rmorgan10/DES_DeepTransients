@@ -22,7 +22,15 @@ BASE_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS"
 
 for cutout_name in parser_args.cutout_names.split(','):
 
-    CONFIG_FILE = f"{BASE_PATH}/PROCESSED/TRAINING_A/{cutout_name}/dl_config.yaml"
+    cutout_path = f"{BASE_PATH}/PROCESSED/TRAINING_A/{cutout_name}"
+    if os.path.exists(f"{cutout_path}/EMPTY.SKIP"):
+        if not os.path.exists(f"{BASE_PATH}/SIMULATIONS/{cutout_name}"):
+            os.system(f"mkdir {BASE_PATH}/SIMULATIONS/{cutout_name}")
+        os.system("touch {BASE_PATH}/SIMULATIONS/{cutout_name}/EMPTY.SKIP")
+        continue
+
+
+    CONFIG_FILE = f"{cutout_path}/dl_config.yaml"
 
     # Generate simulations.
     make_dataset(
