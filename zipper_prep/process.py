@@ -66,36 +66,64 @@ def isolation(
     isolation = mean_sources / (mean_sources + mean_lens)
     return isolation
 
-
-def filter_nans(
-    images: np.ndarray, metadata: pd.DataFrame, band : str = 'g') -> Tuple[Any]:
-    """
-    Remove examples where any image in the time series (in 
-    any band) contains NaNs. Prints fraction of data removed.
+def indicize(image_array: np.ndarray, metadata: pd.DataFrame) -> dict:
+    """Split image array by objects, use OBJID as key in dict for quick lookup.
     
     Args:
-        images (np.array): shape (N, <num_bands>, <height>, <width>)
-        metadata (pd.DataFrame): length N dataframe of metadata
-        band (str, default='g'): band to use for metadata
-        
+      image_array (np.ndarray): Images.
+      metadata (pd.DataFrame): Metadata.
+      
     Returns:
-        images where a NaN wasn't present, 
-        metadata where a NaN wasn't present
+      lookup dictionary for image time series based on index.
+      
+    Raises:
+      ValueError if duplicate OBJIDs are detected in the metadata.
     """
-    # Find the OBJIDs of the time series examples with NaNs.
-    mask = (np.sum(np.isnan(images), axis=(-1, -2, -3)) > 0)
-    bad_objids = metadata[f'OBJID-{band}'].values[mask]
-    full_mask = np.array(
-        [x in bad_objids for x in metadata[f'OBJID-{band}'].values])
+    outdata = {}
+    current_objid = metadata['OBJID'].values.min()
+    prev_idx = 0
+    for idx, objid in enumerate(metadata['OBJID'].values):
+        
+        if objid in outdata:
+            raise ValueError("Duplicate OBJIDs detected.")
+
+        if objid != current_objid:
+            outdata[current_objid] = image_array[prev_idx:idx]
     
-    # Determine the data loss.
-    print("losing", round(sum(full_mask) / len(images) * 100, 2), "% (NaNs)")
+            prev_idx = idx
+            current_objid = objid
+        
+    # Get the last object
+    mask = metadata['OBJID'].values == current_objid
+    outdata[current_objid] = image_array[mask]
+        
+    return outdata
+
+def remove_nans(images: np.ndarray) -> np.ndarray:
+    """Remove NaN images from time series and re-standardize.
     
-    # Apply the mask and return.
-    return (
-        images[~full_mask], 
-        metadata[~full_mask].copy().reset_index(drop=True),
-    )
+    Args:
+      images (np.ndarray): A time series image set of images.
+    
+    Returns:
+      An array with shortened first dimension and NaNs removed.
+    """
+    mask = (np.sum(np.isnan(images), axis=(-1, -2)) > 0)
+    min_length_without_nans = np.sum(~mask, axis=0).min()
+    output = np.empty((min_length_without_nans, *images.shape[1:]), dtype=float)
+    output_idx = {k: 0 for k in range(images.shape[1])}
+    
+    for i in range(images.shape[0]):  
+        for j in range(images.shape[1]):
+            
+            if output_idx[j] >= min_length_without_nans:
+                continue
+            
+            if not mask[i, j]:
+                output[output_idx[j], j] = images[i, j]
+                output_idx[j] += 1
+     
+    return output
 
 
 def coadd_bands(image_arr: np.ndarray) -> np.ndarray:
@@ -158,22 +186,21 @@ def extract_lightcurves(images, aperture_rad=15):
 
 
 def process(
-    image_arr: np.ndarray, metadata: pd.DataFrame, sequence_length: int, 
-    source_arr_i: np.ndarray = None, lens_arr_i: np.ndarray = None, 
-    cumulative: float = 0.9, band: str = 'g') -> dict:
+    image_arr: np.ndarray, metadata: pd.DataFrame, sequence_length: int, bkg_metadata: pd.DataFrame = None,
+    planes: np.ndarray = None, cumulative: float = 0.9, band: str = 'g') -> dict:
     """
     Iterate through image_arr and process data.
 
-    Isolations are calculated if source_arr_i and lens_arr_i are not None.
+    Isolations are calculated if planes is not None. Also, TESTING image arrs are
+    used in place of dl simulated images, so planes are added to the image_arr if
+    they are not None.
     
     Args:
         image_arr (np.ndarray): shape (N, <num_bands>, <height>, <width>).
         metadata (pd.DataFrame): length N dataframe of metadata.
         sequence_length (int): number of epochs in output sequences.
-        source_arr_i (np.ndarray, default=None): i-band source plane shape 
-          (N, <height>, <width>).
-        lens_arr_i (np.ndarray, default=None): i-band lens plane shape 
-          (N, <height>, <width>).
+        bkg_metadata (pd.DataFrame, default=None): metadata for the backgrounds.
+        planes (np.ndarray, default=None): planes from dl simulations.
         cumulative (float, default=0.9): Isolation aperture argument.
         band (str, default='g'): band to use for metadata.
         
@@ -183,34 +210,56 @@ def process(
         - lcs: lightcurves,
         - mds: metadata
     """
-    # Clean the data.
-    # clean_ims, clean_md = filter_nans(image_arr, metadata)
-    clean_ims, clean_md = image_arr, metadata
+    # Indicize backgrounds.
+    if bkg_metadata is not None:
+        indicized_ims = indicize(image_arr, bkg_metadata)
 
-    # Track the data loss due to errors.
-    num_errors = 0
-    
     # Iterate through data and separate by sequence length.
     outdata = {}
-    current_objid = clean_md[f'OBJID-{band}'].values.min()
+    current_objid = metadata[f'OBJID-{band}'].values.min()
     prev_idx = 0
-    for idx, objid in enumerate(clean_md[f'OBJID-{band}'].values):
+    for idx, objid in enumerate(metadata[f'OBJID-{band}'].values):
+
+    if objid != current_objid:
         
-        if objid != current_objid:
-            
-            # Select the object
-            example = clean_ims[prev_idx:idx,:,:,:]
-            
-            # Select the metadata
-            example_md = clean_md.loc[prev_idx:idx-1].copy().reset_index(drop=True)
+        # Set a flag for checking length of backgrounds after truncation.
+        # Does not apply if planes is None.
+        example_usable = planes is None
+
+        # Select the object, metadata.
+        example = image_arr[prev_idx:idx]
+        example_md = metadata.loc[prev_idx:idx-1].copy().reset_index(drop=True)
+        
+        # Add the image backgrounds and calculate isolations if planes is given.
+        if planes is not None:
+            example_planes = planes[prev_idx:idx]
+
+            # Get image backgrounds.
+            bkg_idx = int(example_md[f'BACKGROUND_IDX-{band}'].values[0])
+            backgrounds = remove_nans(indicized_ims[bkg_idx])
+
+            # Truncate simulations and image backgrounds to be the same size.
+            if len(backgrounds) > len(example):
+                backgrounds = backgrounds[0:len(example)]
+            elif len(backgrounds) < len(example):
+                example_md = example_md.loc[0:len(backgrounds)-1].copy().reset_index(drop=True)
+                example_planes = example_planes[0:len(backgrounds)]              
+
+            # Perform the addition of simulations to real images.
+            example = backgrounds + np.sum(example_planes, axis=1)
 
             # Calculate isolations if source and lens arrays are given.
-            if source_arr_i is not None and lens_arr_i is not None:
-                source_arrs = source_arr_i[prev_idx:idx]
-                lens_arrs = lens_arr_i[prev_idx:idx]
-                isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
-                example_md['ISOLATION'] = isolations
+            source_arrs = np.sum(example_planes, axis=1)[:,2]
+            lens_arrs = backgrounds[:,2]
+            isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
+            example_md['ISOLATION'] = isolations
+            
+            # Check the example usability.
+            example_usable = len(example) >= sequence_length
 
+        # Determine if the resulting addition is usable.
+        if example_usable:
+            
             # Determine cadence length
             cadence_length = len(example)
             if cadence_length < sequence_length:
@@ -218,37 +267,24 @@ def process(
                     f"Sequence length must be less that cadence length ({cadence_length}).")
             if sequence_length not in outdata:
                 outdata[sequence_length] = {"ims": [], 'lcs': [], 'mds': []}
-            
-            # Coadd and scale the images - skip if error raised
-            try:
-                # Append each sub-sequence to output.
-                i = 0
-                while sequence_length + i <= cadence_length:
-                    indices = list(range(i, sequence_length + i))
 
-                    processed_ims = coadd_bands(example[indices])
-                    processed_lcs = extract_lightcurves(example[indices])
+            # Coadd and scale the images, append each sub-sequence to output.
+            i = 0
+            while sequence_length + i <= cadence_length:
+                indices = list(range(i, sequence_length + i))
 
-                    outdata[sequence_length]["ims"].append(scale_bands(processed_ims))
-                    outdata[sequence_length]["lcs"].append(scale_bands(processed_lcs))
-                    outdata[sequence_length]["mds"].append(example_md.loc[indices])
+                processed_ims = coadd_bands(example[indices])
+                processed_lcs = extract_lightcurves(example[indices])
 
-                    i += 1
+                outdata[sequence_length]["ims"].append(scale_bands(processed_ims))
+                outdata[sequence_length]["lcs"].append(scale_bands(processed_lcs))
+                outdata[sequence_length]["mds"].append(example_md.loc[indices])
 
-            except FloatingPointError:
-                # Skip example if constant image detected.
-                num_errors += 1
+                i += 1
 
-            # Update trackers
-            prev_idx = idx
-            current_objid = objid
-
-    # Report data loss
-    #print(
-    #    "Losing",  
-    #    round(float(num_errors) / float(len(outdata[sequence_length]["ims"])) * 100, 2), 
-    #    "% (Constants)",
-    #)
+        # Update trackers
+        prev_idx = idx
+        current_objid = objid
     
     return outdata
 
@@ -289,25 +325,28 @@ def mirror_and_rotate(data):
             
     return outdata
 
+
+
 def clean_training_a(data: dict) -> dict:
-    """Remove dataset examples with NaN time delays.
+    """Remove dataset examples where brightest SNe obeservation is > mag 30.
     
     Args:
       data (dict): The output of process().
     
     Returns:
-      Same type of object with certain objects deleted.
+      Same type of object with certain examples deleted.
     """
-    #cols = [
-    #    'PLANE_2-OBJECT_2-tdshift_3-i', ]
+    outdata = {}
+    for key in data.keys():
+        outdata[key] = {'ims': [], 'lcs': [], 'mds': []}
 
-    #output = {}
-    #for key in data:
-    #    mask = np.empty(len(data[key]["ims"]), dtype=bool)
-    #    for i in range(len(data["ims"])):
-    #        if data[key]["mds"][i]
-    #        ...
-    return data
+        for idx, md in enumerate(data[key]['mds']):
+            if md['PLANE_2-OBJECT_2-magnitude-i'].values.min() < 30:
+                outdata[key]['ims'].append(data[key]['ims'][idx])
+                outdata[key]['lcs'].append(data[key]['lcs'][idx])
+                outdata[key]['mds'].append(data[key]['mds'][idx])
+       
+    return outdata
 
 
 if __name__ == "__main__":
@@ -336,12 +375,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sequence_length", type=int, default=10,
         help="Length of subsequences to extract from cutouts.")
+    parser.add_argument(
+        "--small_test", action="store_true",
+        help="Run on just 2 cutouts for each option selected.")
     
     parser_args = parser.parse_args()
 
     if parser_args.training_a:
         print("Processing TRAINING_A")
-        cutout_paths = glob.glob(f'{BASE_PATH}/SIMULATIONS/*')
+        cutout_paths = []
+        all_cutout_paths = [x for x in glob.glob(f'{BASE_PATH}/SIMULATIONS/*') if os.path.isdir(x)]
+        for cutout_path in all_cutout_paths:
+            cutout_name = cutout_path.split("/")[-1]
+            if (len(glob.glob(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_CONFIGURATION_1_training_a_ims_*.npy")) == 0 and
+                not os.path.exists(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/EMPTY.SKIP')):
+                cutout_paths.append(cutout_path)
+        if parser_args.small_test:
+            cutout_paths = cutout_paths[:2]
 
         total_cutouts = len(cutout_paths)
         for cutout_idx, cutout_path in enumerate(cutout_paths):
@@ -351,21 +401,20 @@ if __name__ == "__main__":
             for configuration in ['CONFIGURATION_1', 'CONFIGURATION_2']:
                 print(configuration)
                 # Load images, planes, and metadata into memory.
-                image_arr = np.load(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_images.npy', allow_pickle=True)
+                bkg_metadata = pd.read_csv(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/metadata.csv')
+                image_arr = np.load(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/images.npy', allow_pickle=True)
                 metadata = pd.read_csv(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_metadata.csv')
                 planes = np.load(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_planes.npy', allow_pickle=True)
-                source_planes = planes[:, 1, 2]  # i-band only.
-                lens_planes = image_arr[:, 2] - source_planes  # i-band only.
 
                 # Process training data.
                 output = process(
-                    image_arr, metadata, parser_args.sequence_length, source_planes, 
-                    lens_planes, parser_args.cumulative)
+                    image_arr, metadata, parser_args.sequence_length, 
+                    bkg_metadata, planes, parser_args.cumulative)
 
                 if parser_args.mr:
                     output = mirror_and_rotate(output)
 
-                # Remove systems where time delay was NaN (no lensing).
+                # Remove systems where SNe are too faint to detect.
                 output = clean_training_a(output)
 
                 # Save processed training data.
@@ -385,6 +434,8 @@ if __name__ == "__main__":
 
         # Remove cutouts that are already processed.
         cutout_names = [x for x in cutout_names if not os.path.exists(f"{BASE_PATH}/ZIPPERNET/{x}_training_b_ims_{parser_args.sequence_length}.npy")]
+        if parser_args.small_test:
+            cutout_names = cutout_names[:2]
         total_cutouts = len(cutout_names)
 
         for cutout_idx, cutout_name in enumerate(cutout_names):
@@ -416,6 +467,8 @@ if __name__ == "__main__":
 
         # Remove cutouts that are already processed.
         cutout_names = [x for x in cutout_names if not os.path.exists(f"{BASE_PATH}/ZIPPERNET/{x}_testing_ims_{parser_args.sequence_length}.npy")]
+        if parser_args.small_test:
+            cutout_names = cutout_names[:2]
         total_cutouts = len(cutout_names)
 
         for cutout_idx, cutout_name in enumerate(cutout_names):
