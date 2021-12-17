@@ -26,7 +26,7 @@ for cutout_name in parser_args.cutout_names.split(','):
     if os.path.exists(f"{cutout_path}/EMPTY.SKIP"):
         if not os.path.exists(f"{BASE_PATH}/SIMULATIONS/{cutout_name}"):
             os.system(f"mkdir {BASE_PATH}/SIMULATIONS/{cutout_name}")
-        os.system("touch {BASE_PATH}/SIMULATIONS/{cutout_name}/EMPTY.SKIP")
+        os.system(f"touch {BASE_PATH}/SIMULATIONS/{cutout_name}/EMPTY.SKIP")
         continue
 
 
