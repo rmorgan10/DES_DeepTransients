@@ -220,71 +220,71 @@ def process(
     prev_idx = 0
     for idx, objid in enumerate(metadata[f'OBJID-{band}'].values):
 
-    if objid != current_objid:
-        
-        # Set a flag for checking length of backgrounds after truncation.
-        # Does not apply if planes is None.
-        example_usable = planes is None
-
-        # Select the object, metadata.
-        example = image_arr[prev_idx:idx]
-        example_md = metadata.loc[prev_idx:idx-1].copy().reset_index(drop=True)
-        
-        # Add the image backgrounds and calculate isolations if planes is given.
-        if planes is not None:
-            example_planes = planes[prev_idx:idx]
-
-            # Get image backgrounds.
-            bkg_idx = int(example_md[f'BACKGROUND_IDX-{band}'].values[0])
-            backgrounds = remove_nans(indicized_ims[bkg_idx])
-
-            # Truncate simulations and image backgrounds to be the same size.
-            if len(backgrounds) > len(example):
-                backgrounds = backgrounds[0:len(example)]
-            elif len(backgrounds) < len(example):
-                example_md = example_md.loc[0:len(backgrounds)-1].copy().reset_index(drop=True)
-                example_planes = example_planes[0:len(backgrounds)]              
-
-            # Perform the addition of simulations to real images.
-            example = backgrounds + np.sum(example_planes, axis=1)
-
-            # Calculate isolations if source and lens arrays are given.
-            source_arrs = np.sum(example_planes, axis=1)[:,2]
-            lens_arrs = backgrounds[:,2]
-            isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
-            example_md['ISOLATION'] = isolations
+        if objid != current_objid:
             
-            # Check the example usability.
-            example_usable = len(example) >= sequence_length
+            # Set a flag for checking length of backgrounds after truncation.
+            # Does not apply if planes is None.
+            example_usable = planes is None
 
-        # Determine if the resulting addition is usable.
-        if example_usable:
+            # Select the object, metadata.
+            example = image_arr[prev_idx:idx]
+            example_md = metadata.loc[prev_idx:idx-1].copy().reset_index(drop=True)
             
-            # Determine cadence length
-            cadence_length = len(example)
-            if cadence_length < sequence_length:
-                raise ValueError(
-                    f"Sequence length must be less that cadence length ({cadence_length}).")
-            if sequence_length not in outdata:
-                outdata[sequence_length] = {"ims": [], 'lcs': [], 'mds': []}
+            # Add the image backgrounds and calculate isolations if planes is given.
+            if planes is not None:
+                example_planes = planes[prev_idx:idx]
 
-            # Coadd and scale the images, append each sub-sequence to output.
-            i = 0
-            while sequence_length + i <= cadence_length:
-                indices = list(range(i, sequence_length + i))
+                # Get image backgrounds.
+                bkg_idx = int(example_md[f'BACKGROUND_IDX-{band}'].values[0])
+                backgrounds = remove_nans(indicized_ims[bkg_idx])
 
-                processed_ims = coadd_bands(example[indices])
-                processed_lcs = extract_lightcurves(example[indices])
+                # Truncate simulations and image backgrounds to be the same size.
+                if len(backgrounds) > len(example):
+                    backgrounds = backgrounds[0:len(example)]
+                elif len(backgrounds) < len(example):
+                    example_md = example_md.loc[0:len(backgrounds)-1].copy().reset_index(drop=True)
+                    example_planes = example_planes[0:len(backgrounds)]              
 
-                outdata[sequence_length]["ims"].append(scale_bands(processed_ims))
-                outdata[sequence_length]["lcs"].append(scale_bands(processed_lcs))
-                outdata[sequence_length]["mds"].append(example_md.loc[indices])
+                # Perform the addition of simulations to real images.
+                example = backgrounds + np.sum(example_planes, axis=1)
 
-                i += 1
+                # Calculate isolations if source and lens arrays are given.
+                source_arrs = np.sum(example_planes, axis=1)[:,2]
+                lens_arrs = backgrounds[:,2]
+                isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
+                example_md['ISOLATION'] = isolations
+                
+                # Check the example usability.
+                example_usable = len(example) >= sequence_length
 
-        # Update trackers
-        prev_idx = idx
-        current_objid = objid
+            # Determine if the resulting addition is usable.
+            if example_usable:
+                
+                # Determine cadence length
+                cadence_length = len(example)
+                if cadence_length < sequence_length:
+                    raise ValueError(
+                        f"Sequence length must be less that cadence length ({cadence_length}).")
+                if sequence_length not in outdata:
+                    outdata[sequence_length] = {"ims": [], 'lcs': [], 'mds': []}
+
+                # Coadd and scale the images, append each sub-sequence to output.
+                i = 0
+                while sequence_length + i <= cadence_length:
+                    indices = list(range(i, sequence_length + i))
+
+                    processed_ims = coadd_bands(example[indices])
+                    processed_lcs = extract_lightcurves(example[indices])
+
+                    outdata[sequence_length]["ims"].append(scale_bands(processed_ims))
+                    outdata[sequence_length]["lcs"].append(scale_bands(processed_lcs))
+                    outdata[sequence_length]["mds"].append(example_md.loc[indices])
+
+                    i += 1
+
+            # Update trackers
+            prev_idx = idx
+            current_objid = objid
     
     return outdata
 
