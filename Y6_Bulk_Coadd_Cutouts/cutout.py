@@ -289,7 +289,12 @@ class CutoutProducer:
                 continue
                 
             # Open image file
-            image, wcs = self.read_image(filename)
+            try:
+                image, wcs = self.read_image(filename)
+            except TypeError:
+                print("Automatic Redownload failed. Moving on.")
+                missing_idx.append(i)
+                continue
 
             # Cutout images
             image_cutouts = self.cutout_objects(image, wcs)
@@ -356,6 +361,8 @@ class CutoutProducer:
             for flt in "griz":
                 if flt in self.metadata[nite]:
                     filenames[flt] = self.format_filename(self.metadata[nite][flt]['FILENAME'])
+                    if not os.path.exists(filenames[flt]):
+                        filenames[flt] = 'flag'
 
             # Cutout objects
             image_array = self.combine_bands(filenames['g'], filenames['r'], filenames['i'], filenames['z'])
@@ -442,7 +449,7 @@ if __name__ == "__main__":
     for nite, flt_dict in cutout_prod.metadata.items():
         for md in flt_dict.values():
             if not os.path.exists(cutout_prod.format_filename(md['FILENAME'])):
-                raise OSError(f"{cutout_prod.format_filename(md['FILENAME'])} not found")
+                print(f"WARNING: {cutout_prod.format_filename(md['FILENAME'])} not found")
 
     # Do the thing
     cutout_prod.save_output(cutout_prod.cutout_all_epochs())
