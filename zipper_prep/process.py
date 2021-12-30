@@ -263,8 +263,11 @@ def process(
                 # Determine cadence length
                 cadence_length = len(example)
                 if cadence_length < sequence_length:
-                    raise ValueError(
-                        f"Sequence length must be less that cadence length ({cadence_length}).")
+                    print(f"WARNING: Sequence length ({sequence_length}) must be less that cadence length ({cadence_length}). SKIPPING Example.")
+                    prev_idx = idx
+                    current_objid = objid
+                    continue
+
                 if sequence_length not in outdata:
                     outdata[sequence_length] = {"ims": [], 'lcs': [], 'mds': []}
 
@@ -354,6 +357,7 @@ if __name__ == "__main__":
     import argparse
     import glob
     import os
+    import time
 
     BASE_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS"
 
@@ -390,6 +394,7 @@ if __name__ == "__main__":
             if (len(glob.glob(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_CONFIGURATION_1_training_a_ims_*.npy")) == 0 and
                 not os.path.exists(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/EMPTY.SKIP')):
                 cutout_paths.append(cutout_path)
+
         if parser_args.small_test:
             cutout_paths = cutout_paths[:2]
 
@@ -427,6 +432,7 @@ if __name__ == "__main__":
                     np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_{configuration}_training_a_lcs_{key}.npy", out_lcs)
                     np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_{configuration}_training_a_mds_{key}.npy", out_md, allow_pickle=True)
 
+    time.sleep(5)
     if parser_args.training_b:
         print("Processing TRAINING_B")
         # Separate by cutout.
@@ -460,6 +466,7 @@ if __name__ == "__main__":
                 np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_training_b_lcs_{key}.npy", out_lcs)
                 np.save(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_training_b_mds_{key}.npy", out_md, allow_pickle=True)
 
+    time.sleep(5)
     if parser_args.testing:
         print("Processing TESTING")
         # Separate by cutout.
