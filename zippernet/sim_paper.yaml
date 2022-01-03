@@ -46,7 +46,10 @@ fc2:
   in_features: 6
   out_features: 3
 softmax: None
-  
+
+test_size: 0.1
+num_shards: 75
+monitor_frequency: 500
 batch_size: 5
 shuffle: True
 num_workers: 4

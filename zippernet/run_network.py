@@ -24,25 +24,26 @@ if __name__ == "__main__":
 
     if not os.path.exists(parser_args.outdir):
         os.mkdir(parser_args.outdir)
+    os.system(f"cp {parser_args.config_file} {parser_args.outdir}") # Archive config file.
 
-    # Load training data into memory.
-    training_data, validation_data, train_dataloader = data_utils.load_training_data(
-        parser_args.sequence_length, parser_args.outdir, config_dict)
+    # Use existing training data if it exists.
+    training_dir = f"data_train_{parser_args.sequence_length}"
+    validation_dir = f"data_test_{parser_args.sequence_length}"
 
-    # Save training data and config.
-    data_utils.save_setup(
-        training_data, validation_data, parser_args.config_file, 
-        parser_args.outdir, parser_args.sequence_length)
+    # Load and shard training data if needed.
+    if not all(os.path.exists(x) for x in (training_dir, validation_dir)):
+        data_utils.load_training_data(
+            parser_args.sequence_length, parser_args.outdir, config_dict)
 
     # Instantiate network.
     net = network.ZipperNN(config_dict)
 
     # Train ZipperNet.
     net = training.train(
-        net, training_data, validation_data, train_dataloader, config_dict,
-        parser_args.outdir, parser_args.sequence_length)
+        net, training_dir, validation_dir, config_dict, parser_args.outdir, 
+        parser_args.sequence_length)
 
     # Save final performance.
     training.save_performance(
-        net, validation_data, config_dict, parser_args.outdir,
+        net, validation_dir, config_dict, parser_args.outdir,
         parser_args.sequence_length)
