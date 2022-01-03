@@ -217,6 +217,7 @@ def process(
     # Iterate through data and separate by sequence length.
     outdata = {}
     current_objid = metadata[f'OBJID-{band}'].values.min()
+    num_skipped = 0
     prev_idx = 0
     for idx, objid in enumerate(metadata[f'OBJID-{band}'].values):
 
@@ -227,7 +228,7 @@ def process(
             example_usable = planes is None
 
             # Select the object, metadata.
-            example = image_arr[prev_idx:idx]
+            example = remove_nans(image_arr[prev_idx:idx])
             example_md = metadata.loc[prev_idx:idx-1].copy().reset_index(drop=True)
             
             # Add the image backgrounds and calculate isolations if planes is given.
@@ -263,7 +264,8 @@ def process(
                 # Determine cadence length
                 cadence_length = len(example)
                 if cadence_length < sequence_length:
-                    print(f"WARNING: Sequence length ({sequence_length}) must be less that cadence length ({cadence_length}). SKIPPING Example.")
+                    #print(f"WARNING: Sequence length ({sequence_length}) must be less that cadence length ({cadence_length}). SKIPPING Example.")
+                    num_skipped += 1
                     prev_idx = idx
                     current_objid = objid
                     continue
@@ -288,6 +290,10 @@ def process(
             # Update trackers
             prev_idx = idx
             current_objid = objid
+
+    total_examples = len(outdata[sequence_length]["ims"])
+    skip_frac = round(num_skipped / (num_skipped + total_examples) * 100, 2)
+    print(f"Skipped {num_skipped} of {total_examples + num_skipped}  ({skip_frac} %).")
     
     return outdata
 
