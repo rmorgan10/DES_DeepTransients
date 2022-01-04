@@ -291,10 +291,13 @@ def process(
             prev_idx = idx
             current_objid = objid
 
-    total_examples = len(outdata[sequence_length]["ims"])
+    if sequence_length in outdata:
+        total_examples = len(outdata[sequence_length]["ims"])
+    else:
+        total_examples = 0
     skip_frac = round(num_skipped / (num_skipped + total_examples) * 100, 2)
     print(f"Skipped {num_skipped} of {total_examples + num_skipped}  ({skip_frac} %).")
-    
+        
     return outdata
 
 
