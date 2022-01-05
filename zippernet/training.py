@@ -1,5 +1,6 @@
 """Functionality to train a network."""
 
+import os
 import sys
 
 import numpy as np
@@ -9,7 +10,6 @@ import torch.nn as nn
 
 from data_utils import CombinedDataset, ToCombinedTensor, make_dataloader
 from network import ZipperNN
-
 
 
 def train(
@@ -73,7 +73,7 @@ def train(
                     train_accuracy = np.sum(train_predictions == training_data[0:validation_size]['label'].numpy()) / len(training_data[0:validation_size]['label'].numpy())
                     validation_accuracy = np.sum(validation_predictions == validation_data[0:validation_size]['label'].numpy()) / len(validation_data[0:validation_size]['label'].numpy())
 
-                    print("Epoch: {0} Shard: {5}  Batch: {1}  | Training Accuracy: {2:.3f} -- Validation Accuracy: {3:.3f} -- Loss: {4:.3f}".format(epoch + 1, i_batch + 1, train_accuracy, validation_accuracy, loss.data.numpy(), shard_idx + 1))
+                    print("Epoch: {0} Shard: {5}  Batch: {1} \t| Training Accuracy: {2:.3f} -- Validation Accuracy: {3:.3f} -- Loss: {4:.3f}".format(epoch + 1, i_batch + 1, train_accuracy, validation_accuracy, loss.data.numpy(), shard_idx + 1))
 
                     losses.append(loss.data.numpy())
                     train_acc.append(train_accuracy)
@@ -83,6 +83,9 @@ def train(
                     if validation_accuracy > best_val_acc:
                         torch.save(net.state_dict(), f"{outdir}/network_{sequence_length}.pt")
                         best_val_acc = validation_accuracy
+
+                        os.system(f'rm {outdir}/valacc_*.EMPTY')
+                        os.system(f'touch {outdir}/valacc_{best_val_acc:.3f}_{sequence_length}.EMPTY')
 
             # Delete the shard to immediately free up memory.
             del training_data, validation_data, train_dataloader
