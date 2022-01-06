@@ -53,6 +53,7 @@ monitor_frequency: 500
 batch_size: 5
 shuffle: True
 num_workers: 4
+distribution_factor: 3
 
 num_epochs: 3
 learning_rate: 0.001

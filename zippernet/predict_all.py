@@ -67,7 +67,7 @@ if __name__ == '__main__':
             f'ssh rmorgan@{node}.fnal.gov ' +
             '"source /data/des81.b/data/stronglens/setup.sh && '
             'conda deactivate && conda activate zippernet && '
-            'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/ &&'
+            'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/ && '
             'python predict.py '
             f'--network {parser_args.network} ' +
             f'--config_file {parser_args.config_file} ' + 

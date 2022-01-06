@@ -35,15 +35,62 @@ if __name__ == "__main__":
         data_utils.load_training_data(
             parser_args.sequence_length, parser_args.outdir, config_dict)
 
-    # Instantiate network.
-    net = network.ZipperNN(config_dict)
+    # Single node training.
+    if ('distribution_factor' not in config_dict or 
+        config_dict['distribution_factor'] == 1):
 
-    # Train ZipperNet.
-    net = training.train(
-        net, training_dir, validation_dir, config_dict, parser_args.outdir, 
-        parser_args.sequence_length)
+        # Instantiate network.
+        net = network.ZipperNN(config_dict)
 
-    # Save final performance.
-    training.save_performance(
-        net, validation_dir, config_dict, parser_args.outdir,
-        parser_args.sequence_length)
+        # Train ZipperNet.
+        net = training.train(
+            net, training_dir, validation_dir, config_dict, parser_args.outdir, 
+            parser_args.sequence_length)
+
+        # Save final performance.
+        training.save_performance(
+            net, validation_dir, config_dict, parser_args.outdir,
+            parser_args.sequence_length)
+
+    # Distributed training.
+    else:
+        d_factor = int(config_dict['distribution_factor'])
+        nodes = [
+            'des91', 'des90', 'des81', 'des80', 'des71', 'des70', 'des61',
+            'des60', 'des51', 'des50', 'des41', 'des40', 'des31', 'des30'
+        ]
+        if d_factor > len(nodes):
+            raise ValueError(
+                f"distribution factor must be less than {len(nodes)}.")
+
+        # Distribute shards evenly.
+        shards = {nodes[i]: [] for i in range(d_factor)}
+        node_idx = 0
+        for shard_idx in range(config_dict['num_shards']):
+            shards[nodes[node_idx]].append(shard_idx + 1)
+            node_idx += 1
+            if node_idx == d_factor:
+                node_idx = 0
+                if config_dict['num_shards'] - (shard_idx + 1) < d_factor:
+                    break
+
+        # Start jobs.
+        for node, shard_list in shards.items():
+            cmd = (
+                f'ssh rmorgan@{node}.fnal.gov ' +
+                '"source /data/des81.b/data/stronglens/setup.sh && ' + 
+                'conda deactivate && conda activate zippernet && ' + 
+                'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/ && ' + 
+                'python train_distributed.py ' + 
+                f'--config_file {parser_args.config_file} ' + 
+                f'--sequence_length {parser_args.sequence_length} ' + 
+                f'--outdir {parser_args.outdir} ' + 
+                f'--node {node} ' + 
+                f'--shard_list {",".join([str(x) for x in shard_list])} ' + 
+                f'&> {parser_args.outdir}/{node}_{parser_args.sequence_length}.log" &')
+
+            os.system(cmd)
+
+        
+            
+
