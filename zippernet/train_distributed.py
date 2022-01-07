@@ -168,6 +168,9 @@ def save_performance(
 
     # Save classifications.
     for shard_num in shard_list:
+
+        print(f"Validating Shard {shard_num}")
+        sys.stdout.flush()
         
         filename = f'{validation_dir}/data_i{shard_num}.pt'
         test_dataset = torch.load(filename)
