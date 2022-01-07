@@ -23,6 +23,7 @@ class CNN(nn.Module):
                 obj = nn.Linear
 
             if obj is not None:
+                torch.manual_seed(6)
                 setattr(self, layer, obj(**kwargs))     
         
     def forward(self, x):
@@ -62,6 +63,7 @@ class RNN(nn.Module):
                 obj = nn.Linear
 
             if obj is not None:
+                torch.manual_seed(6)
                 setattr(self, layer, obj(**kwargs))
 
     def forward(self, x):
@@ -98,6 +100,7 @@ class ZipperNN(nn.Module):
 
         for layer, kwargs in self.config_dict.items():
             if layer.startswith("fc"):
+                torch.manual_seed(6)
                 setattr(self, layer, nn.Linear(**kwargs))
         
     def forward(self, x, y):
