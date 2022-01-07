@@ -32,6 +32,9 @@ def train(
         loss_function = nn.CrossEntropyLoss()
     if config_dict['optimizer'] == 'adam':
         optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
+    elif config_dict['optimizer'] == 'sgd':
+        optimizer = torch.optim.SGD(
+            net.parameters(), lr=learning_rate, momentum=0.9, nesterov=True)
 
     # Begin training.
     for epoch in range(num_epochs):
