@@ -98,13 +98,13 @@ def train(
             del training_data, validation_data, train_dataloader
 
             # Signal to other networks that we're ready to combine results.
-            os.system(f'touch {outdir}/{node}_{shard_num_idx}.READY')
+            os.system(f'touch {outdir}/{node}_{shard_num_idx}_{epoch}.READY')
 
             # Wait for other networks to finish.
             print("Waiting for other networks to finish training current shard.")
             sys.stdout.flush()
             while True:
-                ready_files = glob.glob(f'{outdir}/*_{shard_num_idx}.READY')
+                ready_files = glob.glob(f'{outdir}/*_{shard_num_idx}_{epoch}.READY')
                 if len(ready_files) == d_factor:
                     break
                 else:
@@ -130,13 +130,13 @@ def train(
                     param = torch.nn.parameter.Parameter(values)
             
             # Signal to other networks that we're done averaging.
-            os.system(f'touch {outdir}/{node}_{shard_num_idx}.DONE')
+            os.system(f'touch {outdir}/{node}_{shard_num_idx}_{epoch}.DONE')
 
             print("Waiting for other networks to finish averaging.")
             sys.stdout.flush()
             # Remove READY file and start next shard when other networks finish averaging.
             while True:
-                done_files = glob.glob(f'{outdir}/*_{shard_num_idx}.DONE')
+                done_files = glob.glob(f'{outdir}/*_{shard_num_idx}_{epoch}.DONE')
                 if len(done_files) == d_factor:
                     break
                 else:
