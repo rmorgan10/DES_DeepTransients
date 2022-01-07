@@ -187,7 +187,7 @@ def extract_lightcurves(images, aperture_rad=15):
 
 def process(
     image_arr: np.ndarray, metadata: pd.DataFrame, sequence_length: int, bkg_metadata: pd.DataFrame = None,
-    planes: np.ndarray = None, cumulative: float = 0.9, band: str = 'g') -> dict:
+    planes: np.ndarray = None, cumulative: float = 0.9, band: str = 'g', iso_cut: float = -10.0) -> dict:
     """
     Iterate through image_arr and process data.
 
@@ -203,6 +203,8 @@ def process(
         planes (np.ndarray, default=None): planes from dl simulations.
         cumulative (float, default=0.9): Isolation aperture argument.
         band (str, default='g'): band to use for metadata.
+        iso_cut (float, default=-10.0): Only use isolations > iso_cut if 
+          iso_cut > -5.0.
         
     Returns:
         output data dict.
@@ -226,6 +228,7 @@ def process(
             # Set a flag for checking length of backgrounds after truncation.
             # Does not apply if planes is None.
             example_usable = planes is None
+            example_usable_isolations = True
 
             # Select the object, metadata.
             example = remove_nans(image_arr[prev_idx:idx])
@@ -254,12 +257,16 @@ def process(
                 lens_arrs = backgrounds[:,2]
                 isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
                 example_md['ISOLATION'] = isolations
+
+                # Optional cut on isolations.
+                if iso_cut > -5.0:
+                    example_usable_isolations = max(isolations) > iso_cut
                 
                 # Check the example usability.
                 example_usable = len(example) >= sequence_length
 
             # Determine if the resulting addition is usable.
-            if example_usable:
+            if example_usable and example_usable_isolations:
                 
                 # Determine cadence length
                 cadence_length = len(example)
@@ -386,6 +393,9 @@ if __name__ == "__main__":
         "--cumulative", type=float, default=0.9, 
         help="Fraction of lens flux to use when defining isolation aperture.")
     parser.add_argument(
+        "--iso_cut", type=float, default=-10.0, 
+        help="Isolation value requirement for inclusionn (must be > -5.0).")
+    parser.add_argument(
         "--sequence_length", type=int, default=10,
         help="Length of subsequences to extract from cutouts.")
     parser.add_argument(
@@ -423,7 +433,8 @@ if __name__ == "__main__":
                 # Process training data.
                 output = process(
                     image_arr, metadata, parser_args.sequence_length, 
-                    bkg_metadata, planes, parser_args.cumulative)
+                    bkg_metadata, planes, parser_args.cumulative,
+                    parser_args.iso_cut)
 
                 if parser_args.mr:
                     output = mirror_and_rotate(output)
