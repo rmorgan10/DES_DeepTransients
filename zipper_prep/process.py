@@ -243,23 +243,28 @@ def process(
                 backgrounds = remove_nans(indicized_ims[bkg_idx])
 
                 # Truncate simulations and image backgrounds to be the same size.
-                if len(backgrounds) > len(example):
-                    backgrounds = backgrounds[0:len(example)]
-                elif len(backgrounds) < len(example):
+                if len(backgrounds) > len(example_planes):
+                    backgrounds = backgrounds[0:len(example_planes)]
+                    example_md = example_md.loc[0:len(example_planes)-1].copy().reset_index(drop=True)
+                elif len(backgrounds) < len(example_planes):
                     example_md = example_md.loc[0:len(backgrounds)-1].copy().reset_index(drop=True)
-                    example_planes = example_planes[0:len(backgrounds)]              
+                    example_planes = example_planes[0:len(backgrounds)]        
 
                 # Perform the addition of simulations to real images.
                 example = backgrounds + np.sum(example_planes, axis=1)
 
                 # Calculate isolations if source and lens arrays are given.
-                source_arrs = np.sum(example_planes, axis=1)[:,2]
-                lens_arrs = backgrounds[:,2]
-                isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
-                example_md['ISOLATION'] = isolations
+                isolations = None
+                if len(example) > sequence_length:
+                    source_arrs = np.sum(example_planes, axis=1)[:,2]
+                    lens_arrs = backgrounds[:,2]
+                    isolations = [isolation(source_arrs[i], lens_arrs[i], cumulative=cumulative) for i in range(len(source_arrs))]
+                    example_md['ISOLATION'] = isolations
 
                 # Optional cut on isolations.
-                if iso_cut > -5.0:
+                if isolations is None:
+                    example_usable_isolations = False
+                elif iso_cut > -5.0:
                     example_usable_isolations = max(isolations) > iso_cut
                 
                 # Check the example usability.
@@ -410,7 +415,7 @@ if __name__ == "__main__":
         all_cutout_paths = [x for x in glob.glob(f'{BASE_PATH}/SIMULATIONS/*') if os.path.isdir(x)]
         for cutout_path in all_cutout_paths:
             cutout_name = cutout_path.split("/")[-1]
-            if (len(glob.glob(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_CONFIGURATION_1_training_a_ims_*.npy")) == 0 and
+            if (len(glob.glob(f"{BASE_PATH}/ZIPPERNET/{cutout_name}_CONFIGURATION_1_training_a_ims_{parser_args.sequence_length}.npy")) == 0 and
                 not os.path.exists(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/EMPTY.SKIP')):
                 cutout_paths.append(cutout_path)
 
@@ -434,7 +439,7 @@ if __name__ == "__main__":
                 output = process(
                     image_arr, metadata, parser_args.sequence_length, 
                     bkg_metadata, planes, parser_args.cumulative,
-                    parser_args.iso_cut)
+                    iso_cut=parser_args.iso_cut)
 
                 if parser_args.mr:
                     output = mirror_and_rotate(output)
