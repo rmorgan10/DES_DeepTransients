@@ -44,6 +44,6 @@ if __name__ == '__main__':
 
         res = net(data[:]['lightcurve'], data[:]['image']).detach().numpy()
         output = np.hstack((res, fake_labels.reshape(len(fake_labels), 1)))
-        df = pd.DataFrame(data=output, columns=["BG", "LSNIa", "LSNCC", "Label"])
-        df = df[["BG", "LSNIa", "LSNCC"]].copy().reset_index(drop=True)
+        df = pd.DataFrame(data=output, columns=["BG", "LSN", "Label"])
+        df = df[["BG", "LSN"]].copy().reset_index(drop=True)
         df.to_csv(f'{parser_args.outdir}/{name}_predictions_{sequence_length}.csv', index=False)

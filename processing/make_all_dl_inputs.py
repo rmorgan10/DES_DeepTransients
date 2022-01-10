@@ -94,7 +94,7 @@ def split_training_testing(file_list: List[str]):
         else:
             file_list_b.append(filename)
 
-    training_a, leftovers = _split_list(file_list_a, 0.1)
+    training_a, leftovers = _split_list(file_list_a, 0.2)
     remaining_data = leftovers + file_list_b
     b_frac = max(0.001, len(training_a) / len(remaining_data))
     training_b, testing = _split_list(remaining_data, b_frac)

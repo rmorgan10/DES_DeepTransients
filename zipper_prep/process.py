@@ -427,25 +427,32 @@ if __name__ == "__main__":
             cutout_name = cutout_path.split('/')[-1]
             print(f'{cutout_idx + 1} of {total_cutouts}:\t{cutout_name}')
 
-            for configuration in ['CONFIGURATION_1', 'CONFIGURATION_2']:
+            # Load real images into memory.
+            bkg_metadata = pd.read_csv(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/metadata.csv')
+            image_arr = np.load(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/images.npy', allow_pickle=True)
+
+            for configuration in ('CONFIGURATION_1', 'CONFIGURATION_2', 
+            'CONFIGURATION_3', 'CONFIGURATION_4', 'CONFIGURATION_5'):
                 print(configuration)
-                # Load images, planes, and metadata into memory.
-                bkg_metadata = pd.read_csv(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/metadata.csv')
-                image_arr = np.load(f'{BASE_PATH}/PROCESSED/TESTING/{cutout_name}/images.npy', allow_pickle=True)
+                # Load simulations into memory.
                 metadata = pd.read_csv(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_metadata.csv')
                 planes = np.load(f'{BASE_PATH}/SIMULATIONS/{cutout_name}/{configuration}_planes.npy', allow_pickle=True)
 
                 # Process training data.
+                iso_cut_val = parser_args.iso_cut
+                if configuration in ('CONFIGURATION_4', 'CONFIGURATION_5'):
+                    iso_cut_val = -10.0
                 output = process(
                     image_arr, metadata, parser_args.sequence_length, 
                     bkg_metadata, planes, parser_args.cumulative,
-                    iso_cut=parser_args.iso_cut)
+                    iso_cut=iso_cut_val)
 
                 if parser_args.mr:
                     output = mirror_and_rotate(output)
 
                 # Remove systems where SNe are too faint to detect.
-                output = clean_training_a(output)
+                if configuration in ('CONFIGURATION_1', 'CONFIGURATION_2'):
+                    output = clean_training_a(output)
 
                 # Save processed training data.
                 for key in output:

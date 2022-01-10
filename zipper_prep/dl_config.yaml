@@ -29,7 +29,7 @@ SURVEY:
         BANDS: g,r,i,z
         seeing: 
             DISTRIBUTION:
-                NAME: des_deep_seeing
+                NAME: des_seeing
                 PARAMETERS: None
         magnitude_zero_point:
             DISTRIBUTION:
@@ -137,22 +137,64 @@ SPECIES:
                     PARAMETERS:
                         minimum: 0.1
                         maximum: 0.4
+
+    POINTSOURCE_3:
+      NAME: fakets
+      MODEL: static
+      HOST: DARKLENS
+      PARAMETERS:
+          magnitude: 100.0
+
+    POINTSOURCE_4:
+        NAME: normalSNIa
+        MODEL: ia_random
+        HOST: DARKLENS
+        PARAMETERS:
+            magnitude: -5.0 # Overwritten by lightcurve
+            sep_unit: arcsec
+            sep:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: 0.1
+                        maximum: 0.4
+    
+    POINTSOURCE_5:
+        NAME: normalSNCC
+        MODEL: cc_random
+        HOST: DARKLENS
+        PARAMETERS:
+            magnitude: -5.0 # Overwritten by lightcurve
+            sep_unit: arcsec
+            sep:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: 0.1
+                        maximum: 0.4
                             
 
 BACKGROUNDS:
     PATH: /data/des81.b/data/stronglens/DEEP_FIELDS/PROCESSED/TRAINING_A
-    CONFIGURATIONS: ['CONFIGURATION_1', 'CONFIGURATION_2']
+    CONFIGURATIONS: ['CONFIGURATION_1', 'CONFIGURATION_2', 'CONFIGURATION_3, 'CONFIGURATION_4', 'CONFIGURATION_5']
     ITERATE: None
     
 DISTRIBUTIONS:
     USERDIST_1:
-        FILENAME: source_light_profiles.txt
+        FILENAME: user_dists/Config_1_source_light_profiles.txt
         MODE: sample
+    USERDIST_2:
+        FILENAME: user_dists/Config_2_source_light_profiles.txt
+        MODE: sample
+    USERDIST_3:
+        FILENAME: user_dists/Config_3_source_light_profiles.txt
+        MODE: sample
+        
 
 GEOMETRY:
     CONFIGURATION_1:
         NAME: LSNEIa
-        FRACTION: 0.5
+        FRACTION: 0.35
         PLANE_1:
             OBJECT_1: DARKLENS
             PARAMETERS:
@@ -180,7 +222,7 @@ GEOMETRY:
         
     CONFIGURATION_2:
         NAME: LSNECC
-        FRACTION: 0.5
+        FRACTION: 0.35
         PLANE_1:
             OBJECT_1: DARKLENS
             PARAMETERS:
@@ -198,6 +240,82 @@ GEOMETRY:
         TIMESERIES:
             NITES:  [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98] # des_deep_cadence.yaml
             OBJECTS: ['SNCC']
+            PEAK:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: -20
+                        maximum: 118
+
+    CONFIGURATION_3:
+        NAME: Lensing
+        FRACTION: 0.1
+        PLANE_1:
+            OBJECT_1: DARKLENS
+            OBJECT_2: fakets
+            PARAMETERS:
+                REDSHIFT: 0.1 # Overwritten by USERDIST
+                    
+        PLANE_2:
+            OBJECT_1: SOURCE
+            PARAMETERS:
+                REDSHIFT: 0.5 # Overwritten by USERDIST
+
+        TIMESERIES:
+            NITES: [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98] # des_deep_cadence.yaml
+            OBJECTS: ['fakets']
+        
+    CONFIGURATION_4:
+        NAME: SNEIa
+        FRACTION: 0.1
+        PLANE_1:
+            OBJECT_1: DARKLENS
+            OBJECT_2: normalSNIa
+            PARAMETERS:
+                REDSHIFT:
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: 0.03
+                            maximum: 0.6
+                  
+        PLANE_2:
+            OBJECT_1: DARKLENS
+            PARAMETERS:
+                REDSHIFT:  2.5
+
+        TIMESERIES:
+            NITES:  [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98] # des_deep_cadence.yaml
+            OBJECTS: ['normalSNIa']
+            PEAK:
+                DISTRIBUTION:
+                    NAME: uniform
+                    PARAMETERS:
+                        minimum: -20
+                        maximum: 118
+
+    CONFIGURATION_5:
+        NAME: SNECC
+        FRACTION: 0.1
+        PLANE_1:
+            OBJECT_1: DARKLENS
+            OBJECT_2: normalSNCC
+            PARAMETERS:
+                REDSHIFT:
+                    DISTRIBUTION:
+                        NAME: uniform
+                        PARAMETERS:
+                            minimum: 0.03
+                            maximum: 0.6
+                  
+        PLANE_2:
+            OBJECT_1: DARKLENS
+            PARAMETERS:
+                REDSHIFT:  2.5
+
+        TIMESERIES:
+            NITES:  [0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98] # des_deep_cadence.yaml
+            OBJECTS: ['normalSNCC']
             PEAK:
                 DISTRIBUTION:
                     NAME: uniform

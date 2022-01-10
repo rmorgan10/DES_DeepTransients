@@ -178,7 +178,7 @@ def save_performance(
         labels = test_dataset[:]['label'].data.numpy()
         res = net(test_dataset[:]['lightcurve'], test_dataset[:]['image']).detach().numpy()
         output = np.hstack((res, labels.reshape(len(labels), 1)))
-        df = pd.DataFrame(data=output, columns=["BG", "LSNIa", "LSNCC", "Label"])
+        df = pd.DataFrame(data=output, columns=["BG", "LSN", "Label"])
         df.to_csv(f'{validation_dir}/classifications_i{shard_num}.csv', index=False)
 
 

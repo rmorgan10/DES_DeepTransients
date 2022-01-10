@@ -1,38 +1,48 @@
 CNN:
   conv1:
     in_channels: 4
-    out_channels: 48
-    kernel_size: 15
-    stride: 3
+    out_channels: 16
+    kernel_size: 10
+    stride: 1
     padding: 2
   relu1: None
+  maxpool1:
+    kernel_size: 2
   conv2:
-    in_channels: 48
-    out_channels: 96
+    in_channels: 16
+    out_channels: 32
     kernel_size: 5
     stride: 1
     padding: 2
-  maxpool:
+  maxpool2:
     kernel_size: 2
-  dropout1:
-    p: 0.25
+  conv3:
+    in_channels: 32
+    out_channels: 64
+    kernel_size: 3
+    stride: 1
+    padding: 2
+  maxpool2:
+    kernel_size: 2
+  #dropout1:
+  #  p: 0.25
   flatten: None
   fc1:
-    in_features: 3456
+    in_features: 9216
     out_features: 408
   relu2: None
-  dropout2:
-    p: 0.5
+  #dropout2:
+  #  p: 0.5
   fc2:
     in_features: 408
     out_features: 25
-  softmax: None
+  relu3: None
 
 RNN:
   lstm:
     input_size: 4
     hidden_size: 128
-    num_layers: 2
+    num_layers: 3
     batch_first: True
   fc:
     in_features: 128
@@ -44,19 +54,20 @@ fc1:
 relu: None
 fc2:
   in_features: 6
-  out_features: 3
+  out_features: 2
 softmax: None
 
 test_size: 0.1
 num_shards: 75
-monitor_frequency: 500
+shard_limit: 16
+monitor_frequency: 300
 batch_size: 5
 shuffle: True
 num_workers: 4
-distribution_factor: 3
+distribution_factor: 2
 
 num_epochs: 3
 learning_rate: 0.001
-optimizer: adam
+optimizer: sgd
 loss: crossentropy
 validation_size: 1000

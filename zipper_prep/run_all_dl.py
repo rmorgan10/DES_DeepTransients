@@ -32,11 +32,17 @@ if parser_args.check_progress:
     progress = {node: {'DONE': 0, 'TOTAL': 0} for node in des_nodes}
     for line in lines:
         node, cutout = line.split(':')
-        if (os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/CONFIGURATION_2_images.npy") or
+        if (os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/CONFIGURATION_5_images.npy") or
             os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/SIMULATIONS/{cutout}/EMPTY.SKIP")):
             progress[node]['DONE'] += 1
+        elif os.path.exists(f"{cutout}/CONFIGURATION_4_images.npy"):
+            progress[node]['DONE'] += 0.8
+        elif os.path.exists(f"{cutout}/CONFIGURATION_3_images.npy"):
+            progress[node]['DONE'] += 0.6
+        elif os.path.exists(f"{cutout}/CONFIGURATION_2_images.npy"):
+            progress[node]['DONE'] += 0.4
         elif os.path.exists(f"{cutout}/CONFIGURATION_1_images.npy"):
-            progress[node]['DONE'] += 0.5
+            progress[node]['DONE'] += 0.2
         progress[node]['TOTAL'] += 1
 
     for node in progress:

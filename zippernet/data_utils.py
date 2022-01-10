@@ -92,23 +92,31 @@ def load_training_data(
 
     # Collect all data sources and attach labels.
     data_sources = []
+    name_counter = {'0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0}
     training_b_files = glob.glob(
         f'{BASE_DATA_PATH}/*_training_b_ims_{sequence_length}.npy')
     training_b_names = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in training_b_files]
     for name in training_b_names:
         data_sources.append((name, 0))
+        name_counter['0'] += 1
 
-    training_a_files_conf_1 = glob.glob(f'{BASE_DATA_PATH}/*_CONFIGURATION_1_training_a_ims_{sequence_length}.npy')
-    training_a_names_conf_1 = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in training_a_files_conf_1]
-    for name in training_a_names_conf_1:
-        data_sources.append((name, 1))
+    for config in ('CONFIGURATION_3', 'CONFIGURATION_4', 'CONFIGURATION_5'):
+        base_name = config.split('_')[1]
+        files = glob.glob(f'{BASE_DATA_PATH}/*_{config}_training_a_ims_{sequence_length}.npy')
+        names = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in files]
+        for name in names:
+            data_sources.append((name, 0))
+            name_counter[base_name] += 1
 
-    training_a_files_conf_2 = glob.glob(f'{BASE_DATA_PATH}/*_CONFIGURATION_2_training_a_ims_{sequence_length}.npy')
-    training_a_names_conf_2 = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in training_a_files_conf_2]
-    for name in training_a_names_conf_2:
-        data_sources.append((name, 2))
+    for config in ('CONFIGURATION_1', 'CONFIGURATION_2'):
+        base_name = config.split('_')[1]
+        files = glob.glob(f'{BASE_DATA_PATH}/*_{config}_training_a_ims_{sequence_length}.npy')
+        names = [x.split('/ZIPPERNET/')[-1].split('_ims')[0] for x in files]
+        for name in names:
+            data_sources.append((name, 1))
+            name_counter[base_name] += 1
 
-    print(f"Loading Data  --  0: {len(training_b_names)}  1: {len(training_a_files_conf_1)}  2: {len(training_a_files_conf_2)}")
+    print(f"Loading Data  --  0: {name_counter[0]}  1: {name_counter['1']}   2: {name_counter['2']}  3: {name_counter['3']}  4: {name_counter['4']}  5: {name_counter['5']}")
 
     # Load data sources into memory and extand labels.
     total = len(data_sources)

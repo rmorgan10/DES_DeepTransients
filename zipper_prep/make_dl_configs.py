@@ -31,7 +31,7 @@ def make_config(cutout_name: str, seed: int, lines: List[str]) -> int:
   # Get number of images to simulate save image path.
   image_path = f"{BASE_PATH}/{cutout_name}"
   map_df = pd.read_csv(f"{image_path}/map.txt")
-  num_images = int(len(map_df) * 2)
+  num_images = int(len(map_df) * 5)
 
   if num_images == 0:
     os.system(f"touch {BASE_PATH}/{cutout_name}/EMPTY.SKIP")
