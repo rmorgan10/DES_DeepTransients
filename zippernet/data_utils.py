@@ -168,51 +168,41 @@ def load_training_data(
     lightcurves[0] = np.concatenate(lightcurves[0])
     images[1] = np.concatenate(images[1])
     lightcurves[1] = np.concatenate(lightcurves[1])
-    images[2] = np.concatenate(images[2])
-    lightcurves[2] = np.concatenate(lightcurves[2])
 
-    for i in (0, 1, 2):
+    for i in (0, 1):
         if np.sum(np.isnan(images[i])) > 0:
             print(f"NaNs detected in Class {i} images before downsample")
         if np.sum(np.isnan(lightcurves[i])) > 0:
             print(f"NaNs detected in Class {i} lightcurves before downsample")
 
-    if len(images[0]) > 2 * len(images[1]):
-        # Downsample negatives.
-        indices = np.arange(len(images[0]), dtype=int)
-        chosen_indices = np.random.choice(
-            indices, size=2*len(images[1]), replace=False)
-        images[0] = images[0][chosen_indices]
-        lightcurves[0] = lightcurves[0][chosen_indices]
-        out_md = []
-        for i in chosen_indices:
-            out_md.append(metadata[0][i])
-        metadata[0] = out_md
+    if len(images[0]) > len(images[1]):
+        small_sample, large_sample = 1, 0
     else:
-        # Downsample positives.
-        for config in (1, 2):
-            indices = np.arange(len(images[config]), dtype=int)
-            chosen_indices = np.random.choice(
-                indices, size=len(images[0]) // 2, replace=False)
-            images[config] = images[config][chosen_indices]
-            lightcurves[config] = lightcurves[config][chosen_indices]
-            out_md = []
-            for i in chosen_indices:
-                out_md.append(metadata[config][i])
-            metadata[config] = out_md
+        small_sample, large_sample = 0, 1
 
-    print(f"Done. Total training set size  --  0: {len(images[0])}, 1: {len(images[1])}, 2: {len(images[2])}")
+    # Downsample.
+    indices = np.arange(len(images[large_sample]), dtype=int)
+    chosen_indices = np.random.choice(
+        indices, size=len(images[small_sample]), replace=False)
+    images[large_sample] = images[large_sample][chosen_indices]
+    lightcurves[large_sample] = lightcurves[large_sample][chosen_indices]
+    out_md = []
+    for i in chosen_indices:
+        out_md.append(metadata[large_sample][i])
+    metadata[large_sample] = out_md
 
-    for i in (0, 1, 2):
+    print(f"Done. Total training set size  --  0: {len(images[0])}, 1: {len(images[1])}")
+
+    for i in (0, 1):
         if np.sum(np.isnan(images[i])) > 0:
             print(f"NaNs detected in Class {i} images after downsample")
         if np.sum(np.isnan(lightcurves[i])) > 0:
             print(f"NaNs detected in Class {i} lightcurves after downsample")
 
-    y = np.array([*[0]*len(images[0]), *[1]*len(images[1]), *[2]*len(images[2])], dtype=int)
-    X_im = np.concatenate([images[0], images[1], images[2]])
-    X_lc = np.concatenate([lightcurves[0], lightcurves[1], lightcurves[2]])
-    all_metadata = [*metadata[0], *metadata[1], *metadata[2]]
+    y = np.array([*[0]*len(images[0]), *[1]*len(images[1])], dtype=int)
+    X_im = np.concatenate([images[0], images[1]])
+    X_lc = np.concatenate([lightcurves[0], lightcurves[1]])
+    all_metadata = [*metadata[0], *metadata[1]]
 
     # Check for NaNs and drop examples.
     if np.sum(np.isnan(X_im)) > 0 or np.sum(np.isnan(X_lc)) > 0:
@@ -225,7 +215,7 @@ def load_training_data(
         y = y[~mask]
         metadata = [all_metadata[i] for i in range(len(mask)) if not mask[i]]
         values, counts = np.unique(y, return_counts=True)
-        print(f"Done. Training set size  --  0: {counts[0]}, 1: {counts[1]}, 2: {counts[2]}")
+        print(f"Done. Training set size  --  0: {counts[0]}, 1: {counts[1]}")
 
     # Shuffle and split data
     train_lightcurves, test_lightcurves, train_labels, test_labels = train_test_split(
@@ -262,7 +252,7 @@ def shard(
     done_flag = False
     while not done_flag:
 
-        sys.stdout.write(f"\rSharding {prefix} -- {counter} of {num_shards}")
+        sys.stdout.write(f"\rSharding {prefix} -- {counter} of {num_shards + 1}")
         sys.stdout.flush()
 
         stop = start + examples_per_shard
