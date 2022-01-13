@@ -21,7 +21,7 @@ for cutout_dir in all_cutout_dirs:
         cutout_dirs.append(cutout_dir)
         
 des_nodes = ["des30", "des31", "des40", "des41", "des50",
-             "des60", "des70", "des71", "des80", "des81", "des90", "des91"]
+             "des60", "des70", "des71", "des80", "des81", "des90", "des91"][::-1]
 
 
 if parser_args.check_progress:
