@@ -66,7 +66,11 @@ if __name__ == "__main__":
         # Distribute shards evenly.
         shards = {nodes[i]: [] for i in range(d_factor)}
         node_idx = 0
-        for shard_idx in range(min(config_dict['num_shards'], config_dict['shard_limit'])):
+        if 'shard_limit' in config_dict:
+            shard_limit = config_dict['shard_limit']
+        else:
+            shard_limit = config_dict['num_shards']
+        for shard_idx in range(min(config_dict['num_shards'], shard_limit)):
             shards[nodes[node_idx]].append(shard_idx + 1)
             node_idx += 1
             if node_idx == d_factor:
