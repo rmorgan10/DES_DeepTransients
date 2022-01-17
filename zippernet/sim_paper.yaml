@@ -24,15 +24,11 @@ CNN:
     padding: 2
   maxpool2:
     kernel_size: 2
-  #dropout1:
-  #  p: 0.25
   flatten: None
   fc1:
     in_features: 9216
     out_features: 408
   relu2: None
-  #dropout2:
-  #  p: 0.5
   fc2:
     in_features: 408
     out_features: 25
@@ -59,14 +55,14 @@ softmax: None
 
 test_size: 0.1
 num_shards: 75
-shard_limit: 16
+#shard_limit: 16
 monitor_frequency: 300
 batch_size: 5
 shuffle: True
 num_workers: 4
-distribution_factor: 2
+distribution_factor: 5
 
-num_epochs: 3
+num_epochs: 5
 learning_rate: 0.001
 optimizer: sgd
 loss: crossentropy
