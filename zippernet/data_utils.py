@@ -116,7 +116,7 @@ def load_training_data(
             data_sources.append((name, 1))
             name_counter[base_name] += 1
 
-    print(f"Loading Data  --  0: {name_counter[0]}  1: {name_counter['1']}   2: {name_counter['2']}  3: {name_counter['3']}  4: {name_counter['4']}  5: {name_counter['5']}")
+    print(f"Loading Data  --  0: {name_counter['0']}  1: {name_counter['1']}   2: {name_counter['2']}  3: {name_counter['3']}  4: {name_counter['4']}  5: {name_counter['5']}")
 
     # Load data sources into memory and extand labels.
     total = len(data_sources)
