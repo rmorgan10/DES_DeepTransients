@@ -12,39 +12,64 @@ if __name__ == '__main__':
     # Handle command-line arguments.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--network", type=str, help="Name file containing saved network.")
+        "--networks", type=str, help="Comma-delimited list of network files.")
     parser.add_argument(
         "--config_file", type=str, 
         help="Name of config file used in training.")
     parser.add_argument(
         "--outdir", type=str, help="Directtory to save output.")
     parser.add_argument(
+        '--sequence_length', type=int, help="Length of processed time series.",
+        default=10)
+    parser.add_argument(
+        '--validate', action='store_true', help="Predict on validation data.")
+    parser.add_argument(
         "--check_progress", action="store_true", 
         help="Display progress and exit.")
     parser_args = parser.parse_args()
+    sequence_length = parser_args.sequence_length
 
     if parser_args.check_progress:
-        sequence_length = int(parser_args.network.split('_')[-1].split('.')[0])
         f = open("predict_jobs.txt", "r")
         lines = [x.strip() for x in f.readlines()]
         for line in lines:
             node, namestr = line.split(':')
             names = namestr.split(',')
             total = len(names)
-            done = sum([os.path.exists(f'{parser_args.outdir}/{x}_predictions_{sequence_length}.csv') for x in names])
-            print(f'{node}:\tDONE: {done}\tTODO: {total-done}\tTOTAL: {total}')
+            done = sum([os.path.exists(f'{parser_args.outdir}/{x}_classifications_{sequence_length}.csv') for x in names])
+            done_str = ' -- DONE!' if done == total else ''
+            print(f'{node}:\tDONE: {done}\tTODO: {total-done}\tTOTAL: {total} {done_str}')
 
         f.close()
         sys.exit()
 
-    # Locate test data.
-    sequence_length = int(parser_args.network.split('_')[-1].split('.')[0])
-    files = glob.glob(f'{BASE_DATA_PATH}/*testing_ims_{sequence_length}.npy')
-    names = [x.split('_testing')[0].split('ZIPPERNET/')[-1] for x in files]
+    # Make outdir if necessary.
+    if not os.path.exists(parser_args.outdir):
+        os.system(f'mkdir {parser_args.outdir}')
+
+    # Locate data.
+    if parser_args.validate:
+        # Optionally predict on validation data.
+        path = f"/data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/data_test_{sequence_length}"
+        all_names = [x.split('/')[-1][:-3] for x in glob.glob(f'{path}/data_i*.pt')]
+        validate_str = '--validate '
+    
+    else:
+        # Default to testing data.
+        path = f'{BASE_DATA_PATH}'
+        files = glob.glob(f'{BASE_DATA_PATH}/*testing_ims_{sequence_length}.npy')
+        all_names = [x.split('_testing')[0].split('ZIPPERNET/')[-1] for x in files]
+        validate_str = ''
+
+    # Skip data that has already finished.
+    names = []
+    for name in all_names:
+        if not os.path.exists(f'{parser_args.outdir}/{name}_classifications_{sequence_length}.csv'):
+            names.append(name)
 
     # Define DES Nodes.
     nodes = ["des30", "des31", "des40", "des41", "des50", "des60", "des70", 
-        "des71", "des80", "des81", "des90", "des91"]
+        "des71", "des80", "des81", "des90", "des91"][::-1]
     
     # Distribute jobs.
     jobs = {n: [] for n in nodes}
@@ -69,9 +94,12 @@ if __name__ == '__main__':
             'conda deactivate && conda activate zippernet && '
             'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/ && '
             'python predict.py '
-            f'--network {parser_args.network} ' +
+            f'--networks {parser_args.networks} ' +
             f'--config_file {parser_args.config_file} ' + 
+            f'--data_path {path} ' +
             f'--outdir {parser_args.outdir} ' + 
+            f'--sequence_length {parser_args.sequence_length} ' + 
+            validate_str +
             f'--cutout_names {",".join(jobs[node])}" &')
 
         os.system(command)
