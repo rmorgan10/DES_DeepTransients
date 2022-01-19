@@ -75,7 +75,7 @@ if __name__ == "__main__":
             node_idx += 1
             if node_idx == d_factor:
                 node_idx = 0
-                if config_dict['num_shards'] - (shard_idx + 1) < d_factor:
+                if min(config_dict['num_shards'], shard_limit) - (shard_idx + 1) < d_factor:
                     break
 
         # Start jobs.
