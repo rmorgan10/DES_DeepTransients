@@ -88,7 +88,7 @@ class ToCombinedTensor(object):
 def load_training_data(
     sequence_length: int, outdir: str, config_dict: dict):
     """Load training data into memory."""
-    images, lightcurves, metadata = {0:[], 1:[], 2:[]}, {0:[], 1:[], 2:[]}, {0:[], 1:[], 2:[]}
+    images, lightcurves, metadata = {0: [], 1: []}, {0: [], 1: []}, {0: [], 1: []}
 
     # Collect all data sources and attach labels.
     data_sources = []
@@ -160,15 +160,40 @@ def load_training_data(
         for i in range(len(im)):
             metadata[label].append(md[i])
         
-
-    print("\nDone. Making training and validation datasets.")
-
-    # Truncate to have roughly equal class representation.
     images[0] = np.concatenate(images[0])
     lightcurves[0] = np.concatenate(lightcurves[0])
     images[1] = np.concatenate(images[1])
     lightcurves[1] = np.concatenate(lightcurves[1])
 
+    print("\nDone. Making training and validation datasets.")
+
+    # Make sure SNe, SL, and BKG are equally represented in the negative class. 
+    neg_configurations = {0: [], 3: [], 4: []}
+    for md_idx, md in enumerate(metadata[0]):
+        if 'CONFIGURATION_LABEL-g' in md.columns:
+            # Group 4 and 5 together.
+            configuration = min(int(md['CONFIGURATION_LABEL-g'].values[0][-1]), 4)
+        else:
+            configuration = 0
+
+        neg_configurations[configuration].append(md_idx)
+
+    min_neg_config_size = min([len(x) for x in neg_configurations.values()])
+    all_neg_indices = []
+    for k in neg_configurations:
+        neg_chosen_indices = list(np.random.choice(
+            neg_configurations[k], size=min_neg_config_size, replace=False))
+        all_neg_indices += neg_chosen_indices
+
+    all_neg_indices = np.array(all_neg_indices, dtype=int)
+    images[0] = images[0][all_neg_indices]
+    lightcurves[0] = lightcurves[0][all_neg_indices]
+    neg_md = []
+    for neg_idx in all_neg_indices:
+        neg_md.append(metadata[0][neg_idx])
+    metadata[0] = neg_md[:]
+    
+    # Truncate to have roughly equal class representation.
     for i in (0, 1):
         if np.sum(np.isnan(images[i])) > 0:
             print(f"NaNs detected in Class {i} images before downsample")
