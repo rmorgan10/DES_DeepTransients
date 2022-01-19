@@ -352,7 +352,7 @@ def mirror_and_rotate(data):
 
 
 def clean_training_a(data: dict) -> dict:
-    """Remove dataset examples where brightest SNe obeservation is > mag 30.
+    """Remove dataset examples where brightest SNe obeservation is > mag 25.
     
     Args:
       data (dict): The output of process().
@@ -365,7 +365,7 @@ def clean_training_a(data: dict) -> dict:
         outdata[key] = {'ims': [], 'lcs': [], 'mds': []}
 
         for idx, md in enumerate(data[key]['mds']):
-            if md['PLANE_2-OBJECT_2-magnitude-i'].values.min() < 30:
+            if md['PLANE_2-OBJECT_2-magnitude-i'].values.min() < 25:
                 outdata[key]['ims'].append(data[key]['ims'][idx])
                 outdata[key]['lcs'].append(data[key]['lcs'][idx])
                 outdata[key]['mds'].append(data[key]['mds'][idx])
@@ -386,6 +386,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--mr", action="store_true", 
         help="Optionally mirror and rotate images.")
+    parser.add_argument(
+        "--mr_345", action="store_true", 
+        help="Optionally mirror and rotate images from configs 3, 4, and 5.")
     parser.add_argument(
         "--training_a", action="store_true", 
         help="Process simulations for training, meaning calculate isolations.")
@@ -440,17 +443,17 @@ if __name__ == "__main__":
 
                 # Process training data.
                 iso_cut_val = parser_args.iso_cut
-                if configuration in ('CONFIGURATION_4', 'CONFIGURATION_5'):
+                if configuration in ('CONFIGURATION_3', 'CONFIGURATION_4', 'CONFIGURATION_5'):
                     iso_cut_val = -10.0
                 output = process(
                     image_arr, metadata, parser_args.sequence_length, 
                     bkg_metadata, planes, parser_args.cumulative,
                     iso_cut=iso_cut_val)
 
-                if parser_args.mr:
+                if parser_args.mr or (parser_args.mr_345 and configuration in ('CONFIGURATION_3', 'CONFIGURATION_4', 'CONFIGURATION_5')):
                     output = mirror_and_rotate(output)
 
-                # Remove systems where SNe are too faint to detect.
+                # Remove systems where LSNe are too faint to detect.
                 if configuration in ('CONFIGURATION_1', 'CONFIGURATION_2'):
                     output = clean_training_a(output)
 
