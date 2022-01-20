@@ -12,9 +12,10 @@ if __name__ == '__main__':
     # Handle command-line arguments.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--networks", type=str, help="Comma-delimited list of network files.")
+        "--network_dir", type=str, 
+        help="Directory containing training output.")
     parser.add_argument(
-        "--config_file", type=str, 
+        "--config_file", type=str, default="main_config.yaml",
         help="Name of config file used in training.")
     parser.add_argument(
         "--outdir", type=str, help="Directtory to save output.")
@@ -29,6 +30,9 @@ if __name__ == '__main__':
     parser_args = parser.parse_args()
     sequence_length = parser_args.sequence_length
 
+    network_files = ','.join(
+        glob.glob(f'{parser_args.network_dir}/network_*.pt'))
+    
     if parser_args.check_progress:
         f = open("predict_jobs.txt", "r")
         lines = [x.strip() for x in f.readlines()]
@@ -94,7 +98,7 @@ if __name__ == '__main__':
             'conda deactivate && conda activate zippernet && '
             'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/ && '
             'python predict.py '
-            f'--networks {parser_args.networks} ' +
+            f'--networks {network_files} ' +
             f'--config_file {parser_args.config_file} ' + 
             f'--data_path {path} ' +
             f'--outdir {parser_args.outdir} ' + 

@@ -42,10 +42,10 @@ RNN:
     batch_first: True
   fc:
     in_features: 128
-    out_features: 25
+    out_features: 50
 
 fc1:
-  in_features: 50
+  in_features: 75
   out_features: 6
 relu: None
 fc2:
@@ -55,14 +55,14 @@ softmax: None
 
 test_size: 0.1
 num_shards: 75
-#shard_limit: 16
-monitor_frequency: 300
+#shard_limit: 30
+monitor_frequency: 100
 batch_size: 5
 shuffle: True
 num_workers: 4
 distribution_factor: 5
 
-num_epochs: 5
+num_epochs: 20
 learning_rate: 0.001
 optimizer: sgd
 loss: crossentropy

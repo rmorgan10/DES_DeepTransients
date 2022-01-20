@@ -181,6 +181,8 @@ def save_performance(
         df = pd.DataFrame(data=output, columns=["BG", "LSN", "Label"])
         df.to_csv(f'{validation_dir}/classifications_i{shard_num}.csv', index=False)
 
+    print("Done.")
+    sys.stdout.flush()
 
 if __name__ == "__main__":
     import argparse

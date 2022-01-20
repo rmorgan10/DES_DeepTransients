@@ -5,6 +5,7 @@ Dataset and Dataloader objects for DeepTransients
 from collections import OrderedDict
 import glob
 import os
+import random
 import sys
 
 import numpy as np
@@ -86,7 +87,7 @@ class ToCombinedTensor(object):
 
     
 def load_training_data(
-    sequence_length: int, outdir: str, config_dict: dict):
+    sequence_length: int, outdir: str, config_dict: dict, trim: bool = False):
     """Load training data into memory."""
     images, lightcurves, metadata = {0: [], 1: []}, {0: [], 1: []}, {0: [], 1: []}
 
@@ -117,6 +118,10 @@ def load_training_data(
             name_counter[base_name] += 1
 
     print(f"Loading Data  --  0: {name_counter['0']}  1: {name_counter['1']}   2: {name_counter['2']}  3: {name_counter['3']}  4: {name_counter['4']}  5: {name_counter['5']}")
+
+    if trim:
+        random.shuffle(data_sources)
+        data_sources = data_sources[:int(len(data_sources) * 0.4)]
 
     # Load data sources into memory and extand labels.
     total = len(data_sources)

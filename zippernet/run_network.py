@@ -13,12 +13,15 @@ if __name__ == "__main__":
     # Handle command-line arguments.
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--config_file", type=str, help="Name of config file.")
+        "--config_file", type=str, default="main_config.yaml",
+        help="Name of config file.")
     parser.add_argument(
         "--sequence_length", type=int, default=10,
         help="Number of epochs in sequence.")
     parser.add_argument(
-        "--outdir", type=str, help="Directtory to save output.")
+        "--outdir", type=str, help="Directory to save output.")
+    parser.add_argument(
+        "--trim", action='store_true', help="Use 20 percent of data.")
     parser_args = parser.parse_args()
     config_dict = data_utils.read_config(parser_args.config_file)
 
@@ -33,7 +36,8 @@ if __name__ == "__main__":
     # Load and shard training data if needed.
     if not all(os.path.exists(x) for x in (training_dir, validation_dir)):
         data_utils.load_training_data(
-            parser_args.sequence_length, parser_args.outdir, config_dict)
+            parser_args.sequence_length, parser_args.outdir, config_dict, 
+            parser_args.trim)
 
     # Single node training.
     if ('distribution_factor' not in config_dict or 
