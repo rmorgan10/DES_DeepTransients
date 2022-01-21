@@ -305,7 +305,7 @@ def shard(
         counter += 1
         done_flag = stop > len(images)
 
-    print("\nDone. Starting training.")
+    print("\nDone.")
     
 
 def make_dataloader(dataset, config_dict):
