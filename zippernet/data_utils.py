@@ -140,6 +140,8 @@ def load_training_data(
         # Metadata.
         md_file = f'{BASE_DATA_PATH}/{data_source}_mds_{sequence_length}.npy'
         md = np.load(md_file, allow_pickle=True).item()
+        for md_val in md.values():
+            md_val['CUTOUT_SOURCE_NAME'] = name
         
         # Check lengths.
         if len(set(len(x) for x in [im, lc, md])) != 1:
