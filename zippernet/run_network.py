@@ -47,6 +47,8 @@ if __name__ == "__main__":
         print("Exiting early because of --no_train argument.")
         sys.exit()
 
+    print("Starting training.")
+
     # Single node training.
     if ('distribution_factor' not in config_dict or 
         config_dict['distribution_factor'] == 1):
