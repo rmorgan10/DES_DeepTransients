@@ -25,6 +25,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--validate', action='store_true', help="Predict on validation data.")
     parser.add_argument(
+        '--validate_on_train', action='store_true', 
+        help="Predict on training data.")
+    parser.add_argument(
         "--check_progress", action="store_true", 
         help="Display progress and exit.")
     parser_args = parser.parse_args()
@@ -55,6 +58,10 @@ if __name__ == '__main__':
     if parser_args.validate:
         # Optionally predict on validation data.
         path = f"/data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/data_test_{sequence_length}"
+        all_names = [x.split('/')[-1][:-3] for x in glob.glob(f'{path}/data_i*.pt')]
+        validate_str = '--validate '
+    elif parser_args.validate_on_train:
+        path = f"/data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/zippernet/data_train_{sequence_length}"
         all_names = [x.split('/')[-1][:-3] for x in glob.glob(f'{path}/data_i*.pt')]
         validate_str = '--validate '
     
