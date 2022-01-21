@@ -1,6 +1,7 @@
 """Train a ZipperNet."""
 
 import os
+import sys
 
 import data_utils
 import network
@@ -21,7 +22,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--outdir", type=str, help="Directory to save output.")
     parser.add_argument(
-        "--trim", action='store_true', help="Use 20 percent of data.")
+        "--trim", action='store_true', help="Use 60 percent of data.")
+    parser.add_argument(
+        "--no_train", action='store_true', help="Exit after making dataset.")
     parser_args = parser.parse_args()
     config_dict = data_utils.read_config(parser_args.config_file)
 
@@ -38,6 +41,11 @@ if __name__ == "__main__":
         data_utils.load_training_data(
             parser_args.sequence_length, parser_args.outdir, config_dict, 
             parser_args.trim)
+
+    # Optionally exit early.
+    if parser_args.no_train:
+        print("Exiting early because of --no_train argument.")
+        sys.exit()
 
     # Single node training.
     if ('distribution_factor' not in config_dict or 
