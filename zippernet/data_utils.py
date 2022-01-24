@@ -140,8 +140,6 @@ def load_training_data(
         # Metadata.
         md_file = f'{BASE_DATA_PATH}/{data_source}_mds_{sequence_length}.npy'
         md = np.load(md_file, allow_pickle=True).item()
-        for md_val in md.values():
-            md_val['CUTOUT_SOURCE_NAME'] = name
         
         # Check lengths.
         if len(set(len(x) for x in [im, lc, md])) != 1:
@@ -165,6 +163,7 @@ def load_training_data(
         images[label].append(im.reshape((len(im), 4, 45, 45)))
         lightcurves[label].append(lc)
         for i in range(len(im)):
+            md[i]['CUTOUT_SOURCE_NAME'] = data_source
             metadata[label].append(md[i])
         
     images[0] = np.concatenate(images[0])
@@ -221,7 +220,7 @@ def load_training_data(
     out_md = []
     for i in chosen_indices:
         out_md.append(metadata[large_sample][i])
-    metadata[large_sample] = out_md
+    metadata[large_sample] = out_md[:]
 
     print(f"Done. Total training set size  --  0: {len(images[0])}, 1: {len(images[1])}")
 
