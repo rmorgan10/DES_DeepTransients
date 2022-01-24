@@ -275,6 +275,7 @@ def process(
                 
                 # Determine cadence length
                 cadence_length = len(example)
+                example_md['CADENCE_LENGTH'] = cadence_length
                 if cadence_length < sequence_length:
                     #print(f"WARNING: Sequence length ({sequence_length}) must be less that cadence length ({cadence_length}). SKIPPING Example.")
                     num_skipped += 1
