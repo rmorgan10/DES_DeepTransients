@@ -8,8 +8,8 @@ import pandas as pd
 
 SCALE_MIN = -7.0
 SCALE_MAX = 3.0
-CUTOFF = 0.875
-DETECTION_CUTOFF = 0.67
+CUTOFF = 0.67 
+DETECTION_CUTOFF = 0.7 
 
 MD_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS/ZIPPERNET"
 CAT_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS/PROCESSED/TESTING"
