@@ -29,6 +29,9 @@ parser.add_argument(
     help="Comma-Delimited list of classificaiton files.")
 parser.add_argument(
     "--node", type=str, help="Name of node where this script is running.")
+parser.add_argument(
+    "--md_check", action="store_true", 
+    help="Skip missing or corrupted metadata files if they are detected.")
 parser_args = parser.parse_args()
 
 total_candidates = 0
@@ -43,27 +46,41 @@ for filename in filenames:
     cutout_name = filename.split('/')[-1].split('_classifications')[0]
     md_file = f"{MD_PATH}/{cutout_name}_testing_mds_{parser_args.sequence_length}.npy"
     cat_file = f"{CAT_PATH}/{cutout_name}/catalog.csv"
-    if not os.path.exists(md_file):
-        continue
+    orig_md_file = f"{CAT_PATH}/{cutout_name}/metadata.csv"
 
-    try:
+    if not parser_args.md_check:
         md = np.load(md_file, allow_pickle=True).item()
-    except OSError:
-        print(f" Skipping {cutout_name}")
-        continue
+    else:
+        if not os.path.exists(md_file):
+            continue
+        try:
+            md = np.load(md_file, allow_pickle=True).item()
+        except OSError:
+            print(f" Skipping {cutout_name}")
+            continue
+
     df = pd.read_csv(filename)
     cat = pd.read_csv(cat_file)
+    orig_md = pd.read_csv(orig_md_file)
+    orig_md['IDX'] = np.arange(len(orig_md), dtype=int)
     cat_cols = list(cat.columns)
     
     # Add metadata and catalog to classification df.
-    lengths, objids = [], []
+    lengths, objids, idx_min, idx_max = [], [], [], []
     for idx in range(len(df)):
         lengths.append(md[idx]['CADENCE_LENGTH'].values[0])
-        objids.append(md[idx]['OBJID'].values[0])
+        objid = md[idx]['OBJID'].values[0]
+        objids.append(objid)
+        orig_md_arr = orig_md['IDX'].values[orig_md['OBJID'].values == objid]
+        idx_min.append(orig_md_arr.min())
+        idx_max.append(orig_md_arr.max())
+
     df['CADENCE_LENGTH'] = lengths
     df['OBJID'] = objids
     df['CUTOUT_NAME'] = cutout_name
-    df['IDX'] = np.arange(len(df), dtype=int)
+    df['IDX_MIN'] = idx_min
+    df['IDX_MAX'] = idx_max
+
     df = df.merge(cat, how='left', on='OBJID')
 
     # Add ZipperNet score.
@@ -88,7 +105,7 @@ for filename in filenames:
 
     if num_candidates > 0:
         # Found Candidates!
-        candidate_array = df[['IDX', 'CUTOUT_NAME', 'SCORE', 'DETECTION_SCORE', *cat_cols]].values[mask]
+        candidate_array = df[['IDX_MIN', 'IDX_MAX', 'CUTOUT_NAME', 'SCORE', 'DETECTION_SCORE', *cat_cols]].values[mask]
         candidates.append(candidate_array)
 
         os.system(f"rm {parser_args.outdir}/status/*_{parser_args.node}.CANDS")
@@ -97,7 +114,7 @@ for filename in filenames:
     os.system(f"touch {parser_args.outdir}/status/{parser_args.node}_{cutout_name}.DONE")
 
 if total_candidates > 0:
-    cols = ('IDX', 'CUTOUT_NAME', 'SCORE', 'DETECTION_SCORE', *cat_cols)
+    cols = ('IDX_MIN', 'IDX_MAX', 'CUTOUT_NAME', 'SCORE', 'DETECTION_SCORE', *cat_cols)
     cand_df = pd.DataFrame(data=np.concatenate(candidates), columns=cols)
     cand_df.sort_values(by=['DETECTION_SCORE', 'SCORE'], ascending=False, inplace=True)
     cand_df.to_csv(f"{parser_args.outdir}/{parser_args.node}_candidates.csv", index=False)

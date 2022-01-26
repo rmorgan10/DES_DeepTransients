@@ -32,8 +32,9 @@ for cutout_name, df in candidate_df.groupby('CUTOUT_NAME'):
 
         # Grab images.
         cutout_ims = np.load(f"{IMS_PATH}/{cutout_name}/images.npy")
-        objids = sorted(list(np.unique((coadd_id_df['IDX'].values.astype(int)))))
-        ims = cutout_ims[objids]
+        start = coadd_id_df['IDX_MIN'].values[0]
+        end = coadd_id_df['IDX_MAX'].values[0] + 1
+        ims = cutout_ims[start:end]
 
         # Store data.
         candidate_data[coadd_id] = {'IMAGES': ims, 'METADATA': coadd_id_df}
