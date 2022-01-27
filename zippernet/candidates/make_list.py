@@ -8,8 +8,8 @@ import pandas as pd
 
 SCALE_MIN = -7.0
 SCALE_MAX = 3.0
-CUTOFF = 0.67 
-DETECTION_CUTOFF = 0.7 
+CUTOFF = 0.76 
+DETECTION_CUTOFF = 0.6
 
 MD_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS/ZIPPERNET"
 CAT_PATH = "/data/des81.b/data/stronglens/DEEP_FIELDS/PROCESSED/TESTING"
@@ -100,7 +100,7 @@ for filename in filenames:
     df['DETECTION_SCORE'] = df['NUM_ABOVE_CUTOFF'].values / df['CADENCE_LENGTH'].values
 
     mask = (df['SCORE'].values > CUTOFF) & (df['DETECTION_SCORE'].values > DETECTION_CUTOFF)
-    num_candidates = sum(mask)
+    num_candidates = len(np.unique(df['COADD_OBJECT_ID'].values[mask]))
     total_candidates += num_candidates
 
     if num_candidates > 0:
