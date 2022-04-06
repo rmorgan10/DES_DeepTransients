@@ -79,7 +79,7 @@ if __name__ == '__main__':
             names.append(name)
 
     # Define DES Nodes.
-    nodes = ["des30", "des31", "des40", "des41", "des50", "des60", "des70", 
+    nodes = ["des70", 
         "des71", "des80", "des81", "des90", "des91"][::-1]
     
     # Distribute jobs.

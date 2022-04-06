@@ -24,6 +24,8 @@ parser.add_argument("--check_progress",
 parser.add_argument("--be_nice",
                     action="store_true",
                     help="Only use 5 nodes in parallel")
+parser.add_argument("--node_replace", type=str, default='', 
+                    help='Comma-separated pair of node to remove followed by node to use instead.')
 
 args = parser.parse_args()
 
@@ -76,12 +78,18 @@ def download(args):
         if listfile == 'SKIP':
             continue
 
+        run_node = node
+        if args.node_replace != '':
+            skip_node, replace_node = args.node_replace.split(',')
+            if skip_node == node:
+                run_node = replace_node
+
         counter += 1
         if args.be_nice:
             if counter > 5:
                 break
         
-        command = (f'ssh rmorgan@{node}.fnal.gov ' + 
+        command = (f'ssh rmorgan@{run_node}.fnal.gov ' + 
                    '"source /data/des81.b/data/stronglens/setup.sh && ' +   
                    f'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/images/{args.season}/ && ' +
                    f'wget --no-check-certificate -i {listfile} " &')

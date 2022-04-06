@@ -46,11 +46,18 @@ md = md[md['SEASON'].values == args.season].copy().reset_index(drop=True)
 
 # Get list of CCDs
 md['CCD'] = md['FILENAME'].str.extract("_c(.*?)_").values.astype(int)
-ccds = list(set(md['CCD'].values))
+all_ccds = list(set(md['CCD'].values))
+
+# Trim to remaining CCDs
+ccds = []
+for ccd in all_ccds:
+    if not os.path.exists(f"/data/des81.b/data/stronglens/DEEP_FIELDS/CUTOUTS/{args.season}/{args.field}/{args.field}_{args.season}_{ccd}.npy"):
+        ccds.append(ccd)
+
 
 # Establish nodes
-des_nodes = ["des30", "des31", "des40", "des41", "des50",
-             "des60", "des70", "des71", "des80", "des81", "des90", "des91"]
+des_nodes = ["des30", "des40", "des50",
+             "des60", "des61", "des70", "des71", "des81", "des90", "des91"][::-1]
 
 # Make status directory
 status_dir = f"{args.field}_{args.season}_status/"

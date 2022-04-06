@@ -23,7 +23,8 @@ data_dict = {
 DES_NODES_a = ["des30", "des40"]
 DES_NODES_b = ["des50", "des60"]
 DES_NODES_test = [
-    "des31", "des41", "des70", "des71", "des80", "des81", "des90", "des91"
+    "des31", "des41", "des51", "des61", "des70", "des71", 
+    "des80", "des81", "des90", "des91"
 ]
 
 
@@ -172,6 +173,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--aggressive", action="store_true", 
         help="Run cutout jobs concurrently on each node.")
+    parser.add_argument(
+        "--limit", type=int, default=10000,
+        help="Max number of jobs to run in parallel.")
     parser_args = parser.parse_args()
 
     # Determine jobs to distribute.
@@ -179,7 +183,8 @@ if __name__ == "__main__":
     split_training_testing(remaining_cutout_files)
     jobs = queue_up_jobs()
 
-    # Submit jobs.
+    # Order jobs by node.
+    jobs_to_submit = []
     for node, job_list in jobs.items():
         args = job_list[0].split(',')[-1].strip()
         cutout_names = ','.join([x.split(',')[0] for x in job_list])
@@ -192,8 +197,7 @@ if __name__ == "__main__":
                     'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/processing/ &&'
                     f'python make_dl_inputs.py --filenames {cutout_name} {args}" &'
                 )
-                os.system(cmd)
-
+                jobs_to_submit.append(cmd)
         else:
             cmd = (
                 f'ssh rmorgan@{node}.fnal.gov ' +
@@ -201,9 +205,16 @@ if __name__ == "__main__":
                 'cd /data/des81.b/data/stronglens/DEEP_FIELDS/PRODUCTION/processing/ &&'
                 f'python make_dl_inputs.py --filenames {cutout_names} {args}" &'
             )
+            jobs_to_submit.append(cmd)
 
-            os.system(cmd)
-        
+
+    # Submit jobs.
+    random.shuffle(jobs_to_submit)
+    for idx, cmd in enumerate(jobs_to_submit):
+        if idx >= parser_args.limit:
+            break
+        os.system(cmd)
+
 
 
 

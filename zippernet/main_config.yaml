@@ -60,7 +60,7 @@ monitor_frequency: 100
 batch_size: 5
 shuffle: True
 num_workers: 4
-distribution_factor: 5
+distribution_factor: 1 #5
 
 num_epochs: 20
 learning_rate: 0.001

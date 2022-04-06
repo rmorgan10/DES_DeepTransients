@@ -55,6 +55,9 @@ if __name__ == "__main__":
 
         # Instantiate network.
         net = network.ZipperNN(config_dict)
+        num_params = sum(p.numel() for p in net.parameters() if p.requires_grad)
+        print("Model contains", num_params, "trainable parameters.")
+
 
         # Train ZipperNet.
         net = training.train(
